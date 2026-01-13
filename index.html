@@ -268,6 +268,7 @@ tr.muc-3 {
 
 <div id="preview_anh" style="margin-top:6px;"></div>
 
+
 <button type="button"
         onclick="gui()"
         style="
@@ -1787,12 +1788,53 @@ document.getElementById("anh_chup").addEventListener("change", e => {
 
 function hienPreview(file) {
   if (previewURL) URL.revokeObjectURL(previewURL);
+
   previewURL = URL.createObjectURL(file);
 
-  document.getElementById("preview_anh").innerHTML =
-    `<img src="${previewURL}"
-          style="max-width:120px;border:1px solid #ccc;border-radius:4px">`;
+  document.getElementById("preview_anh").innerHTML = `
+    <div style="display:inline-block; position:relative;">
+      <img src="${previewURL}"
+           style="max-width:120px;border:1px solid #ccc;border-radius:4px">
+
+      <button type="button"
+              onclick="xoaAnh()"
+              style="
+                position:absolute;
+                top:-8px;
+                right:-8px;
+                width:22px;
+                height:22px;
+                border-radius:50%;
+                border:none;
+                background:#d32f2f;
+                color:white;
+                font-weight:bold;
+                cursor:pointer;
+              ">
+        ×
+      </button>
+    </div>
+  `;
 }
+
+function xoaAnh() {
+  // hủy URL preview
+  if (previewURL) {
+    URL.revokeObjectURL(previewURL);
+    previewURL = null;
+  }
+
+  // xóa file đang giữ
+  fileAnh = null;
+
+  // reset input file
+  document.getElementById("anh_chon").value = "";
+  document.getElementById("anh_chup").value = "";
+
+  // xóa preview
+  document.getElementById("preview_anh").innerHTML = "";
+}
+
 
 function gui() {
   if (!ngay.value || !lop.value || !ho_ten.value || !vi_pham.value) {
