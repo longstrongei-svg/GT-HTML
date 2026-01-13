@@ -1657,8 +1657,11 @@ function dangNhap() {
     // LƯU PHIÊN
     sessionStorage.setItem("GT_LOGIN_USER", res.user);
     sessionStorage.setItem("GT_ROLE", res.role);
-    // set sẵn người xử lý
-    document.getElementById("nguoi").value = res.user;
+
+    // ===== GÁN CỐ ĐỊNH NGƯỜI XỬ LÝ =====
+    const nguoiEl = document.getElementById("nguoi");
+    nguoiEl.value = res.user;
+    nguoiEl.disabled = true;          // 🔥 KHÓA KHÔNG CHO ĐỔI
 
     document.getElementById("loginBox").style.display = "none";
   })
@@ -1867,7 +1870,7 @@ function gui() {
     mo_ta: mo_ta.value,
     hinh_thuc: hinh_thuc.value,
     diem_tru: diem_tru.value,
-    nguoi: nguoi.value
+    nguoi: sessionStorage.getItem("GT_LOGIN_USER")
   };
 
   // ===== 1. TẠO BẢN GHI LỊCH SỬ (CHƯA GỬI) =====
@@ -2111,7 +2114,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!u) {
     document.getElementById("loginBox").style.display = "flex";
   } else {
-    document.getElementById("nguoi").value = u;
+    const nguoiEl = document.getElementById("nguoi");
+    nguoiEl.value = u;
+    nguoiEl.disabled = true;        // 🔥 KHÓA LẠI SAU F5
     document.getElementById("loginBox").style.display = "none";
   }
 });
