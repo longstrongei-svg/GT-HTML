@@ -1554,10 +1554,10 @@ function napLoai(){
   });
 }
 
-let suaIndex = null;
+let SUA_ID = null;
 
-function deXuatSua(i){
-  suaIndex = i;
+function deXuatSuaDB(id){
+  SUA_ID = id;
   document.getElementById("noi_dung_sua").value = "";
   document.getElementById("popupSua").style.display = "flex";
 }
@@ -1602,18 +1602,31 @@ function guiDeXuat(){
   });
 }
 
+const DS_USER_GT = [
+  "GT Trần Duy Linh",
+  "GT Đỗ Mạnh Toàn",
+  "GT Phan Tuấn Anh",
+  "GT Đỗ Thị Hường",
+  "GT Lê Nhật Long",
+  "GT Nguyễn Văn Hà",
+  "GT Lê Trung Kiên",
+  "GT Hoàng Quang Trung",
+  "GT Nguyễn Trà My",
+  "GT Ngô Thị Ngọc Ánh",
+  "GT Nguyễn Sơn Thành"
+];
+
 function napUserDangNhap() {
   const sel = document.getElementById("login_user");
   sel.innerHTML = "<option value=''>-- Chọn người --</option>";
 
-  document.querySelectorAll("#nguoi option").forEach(o => {
-    if (o.value && o.value !== "Khác") {
-      const opt = document.createElement("option");
-      opt.value = opt.textContent = o.value;
-      sel.appendChild(opt);
-    }
+  DS_USER_GT.forEach(u => {
+    const opt = document.createElement("option");
+    opt.value = opt.textContent = u;
+    sel.appendChild(opt);
   });
 }
+
 
 const API_ROOT = API.replace("/send", "");
 
@@ -1921,28 +1934,105 @@ function capNhatNgayHienThi() {
 
 ngayInput.addEventListener("change", capNhatNgayHienThi);
 
-function veBang(){
-  const tb=document.getElementById("lichsu");
-  tb.innerHTML="";
-  getData().forEach((i,idx)=>{
-    tb.innerHTML+=`
-    <tr>
-      <td>${formatNgayDDMMYYYY(i.ngay)}</td>
-      <td>${i.lop}</td>
-      <td>${i.ho_ten}</td>
-      <td>${i.vi_pham}</td>
-      <td>${i.thoi_gian}</td>
-      <td class="${i.sent?'sent':'pending'}">${i.sent?'Đã gửi':'Chưa gửi'}</td>
-      <td class="action">
-        <button class="btn edit" onclick="deXuatSua(${idx})">Đề xuất sửa</button>
-        <button class="btn resend" onclick="guiLai(${idx})">Gửi lại</button>
-        <button class="btn delete" onclick="xoa(${idx})">Xóa</button>
-      </td>
-    </tr>`;
+function veBang() {
+  const tb = document.getElementById("lichsu");
+  tb.innerHTML = "<tr><td colspan='7'>⏳ Đang tải dữ liệu...</td></tr>";
+
+  const user = sessionStorage.getItem("GT_LOGIN_USER");
+  if (!user) {
+    tb.innerHTML = "<tr><td colspan='7'>Chưa đăng nhập</td></tr>";
+    return;
+  }
+
+  const API_ROOT = API.replace("/send", "");
+  const url = API_ROOT + "/api/my?nguoi=" + encodeURIComponent(user);
+
+  fetch(url)
+    .then(r => r.json())
+    .then(ds => {
+      if (!Array.isArray(ds) || ds.length === 0) {
+        tb.innerHTML = "<tr><td colspan='7'>Chưa có lỗi nào</td></tr>";
+        return;
+      }
+
+      tb.innerHTML = "";
+      ds.forEach(i => {
+        tb.innerHTML += `
+          <tr>
+            <td>${formatNgayDDMMYYYY(i.ngay)}</td>
+            <td>${i.lop || ""}</td>
+            <td>${i.ho_ten || ""}</td>
+            <td>${i.vi_pham || ""}</td>
+            <td>${i.thoi_gian || ""}</td>
+            <td class="sent">Đã gửi</td>
+            <td class="action">
+              <button class="btn resend"
+                      onclick="guiLaiDB(${i.id})">🔁 Gửi lại</button>
+
+              <button class="btn delete"
+                      onclick="xoaDB(${i.id})">🗑️ Xóa</button>
+
+              <button class="btn edit"
+                      onclick="deXuatSuaDB(${i.id})">✏️ Đề xuất sửa</button>
+            </td>
+          </tr>
+        `;
+      });
+
+    })
+    .catch(err => {
+      console.error(err);
+      tb.innerHTML =
+        "<tr><td colspan='7'>❌ Không tải được dữ liệu</td></tr>";
+    });
+}
+
+function xoaDB(id){
+  if (!confirm("Xóa lỗi này? Không thể hoàn tác.")) return;
+
+  const user = sessionStorage.getItem("GT_LOGIN_USER");
+  if (!user) {
+    alert("⚠️ Chưa đăng nhập");
+    return;
+  }
+
+  fetch(API_ROOT + "/api/xoa", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-User": encodeURIComponent(user)   // ✅ FIX 100%
+    },
+    body: JSON.stringify({ id })
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (!res.ok) throw res.error;
+    alert("🗑️ Đã xóa");
+    veBang();
+  })
+  .catch(err => {
+    alert("❌ Không xóa được: " + err);
   });
 }
 
 
+
+function guiLaiDB(id){
+  fetch(API_ROOT + "/api/one?id=" + id)
+    .then(r => r.json())
+    .then(data => {
+      // fill lại form
+      ngay.value     = data.ngay;
+      lop.value      = data.lop;
+      ho_ten.value   = data.ho_ten;
+      vi_pham.value = data.vi_pham;
+      thoi_gian.value = data.thoi_gian;
+      nguoi.value    = data.nguoi;
+
+      openTab(0); // quay về tab Gửi lỗi
+      alert("✏️ Đã nạp dữ liệu, kiểm tra lại rồi bấm Gửi");
+    });
+}
 
 function guiLai(i){
   const d = getData();
@@ -2009,23 +2099,22 @@ function xoa(i){
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // 🔥 NẠP LOẠI VI PHẠM (BẮT BUỘC)
   napLoai();
 
-  // 🔥 NẠP CÁC PREF (NẾU CÓ)
   loadPrefs?.();
+
+  // 🔥 BẮT BUỘC GỌI TRƯỚC
+  napUserDangNhap();
 
   const u = sessionStorage.getItem("GT_LOGIN_USER");
 
   if (!u) {
     document.getElementById("loginBox").style.display = "flex";
-    napUserDangNhap();
   } else {
     document.getElementById("nguoi").value = u;
     document.getElementById("loginBox").style.display = "none";
   }
 });
-
 
 
 let ALL_DATA = [];
