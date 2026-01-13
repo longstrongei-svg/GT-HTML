@@ -1871,6 +1871,7 @@ function gui() {
     hinh_thuc: hinh_thuc.value,
     diem_tru: diem_tru.value,
     nguoi: sessionStorage.getItem("GT_LOGIN_USER")
+ || nguoi.value
   };
 
   // ===== 1. TẠO BẢN GHI LỊCH SỬ (CHƯA GỬI) =====
@@ -2103,20 +2104,19 @@ function xoa(i){
 
 document.addEventListener("DOMContentLoaded", () => {
   napLoai();
-
   loadPrefs?.();
-
-  // 🔥 BẮT BUỘC GỌI TRƯỚC
   napUserDangNhap();
 
   const u = sessionStorage.getItem("GT_LOGIN_USER");
 
   if (!u) {
+    // 🔐 CHƯA ĐĂNG NHẬP → BẮT BUỘC LOGIN
     document.getElementById("loginBox").style.display = "flex";
   } else {
+    // ✅ ĐÃ ĐĂNG NHẬP
     const nguoiEl = document.getElementById("nguoi");
     nguoiEl.value = u;
-    nguoiEl.disabled = true;        // 🔥 KHÓA LẠI SAU F5
+    nguoiEl.disabled = true;   // 🔒 KHÓA NGƯỜI XỬ LÝ
     document.getElementById("loginBox").style.display = "none";
   }
 });
