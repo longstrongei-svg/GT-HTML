@@ -1457,6 +1457,10 @@ function layLopTheoKhoi(khoi) {
     .sort();
 }
 
+function dangChayTrenGithub() {
+  return location.hostname.includes("github.io");
+}
+
 document.getElementById("khoi").addEventListener("change", function () {
   napLopTheoKhoi(this.value);
 });
@@ -2107,19 +2111,26 @@ document.addEventListener("DOMContentLoaded", () => {
   loadPrefs?.();
   napUserDangNhap();
 
+  // 🔥 FIX RIÊNG CHO GITHUB
+  if (dangChayTrenGithub()) {
+    sessionStorage.removeItem("GT_LOGIN_USER");
+    sessionStorage.removeItem("GT_ROLE");
+  }
+
   const u = sessionStorage.getItem("GT_LOGIN_USER");
 
   if (!u) {
-    // 🔐 CHƯA ĐĂNG NHẬP → BẮT BUỘC LOGIN
+    // BẮT BUỘC ĐĂNG NHẬP
     document.getElementById("loginBox").style.display = "flex";
   } else {
-    // ✅ ĐÃ ĐĂNG NHẬP
+    // ĐÃ ĐĂNG NHẬP
     const nguoiEl = document.getElementById("nguoi");
     nguoiEl.value = u;
-    nguoiEl.disabled = true;   // 🔒 KHÓA NGƯỜI XỬ LÝ
+    nguoiEl.disabled = true;
     document.getElementById("loginBox").style.display = "none";
   }
 });
+
 
 
 let ALL_DATA = [];
