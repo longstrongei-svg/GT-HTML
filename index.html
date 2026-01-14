@@ -130,6 +130,12 @@ tr.muc-3 {
     <div id="login_err"
          style="color:red;text-align:center;margin-top:8px">
     </div>
+    <div style="text-align:center; margin-top:8px;">
+      <a href="#" onclick="quenMatKhau(); return false;"
+        style="font-size:13px; color:#1565c0;">
+        ❓ Quên mật khẩu
+      </a>
+    </div>
   </div>
 </div>
 
@@ -1454,6 +1460,50 @@ function layLopTheoKhoi(khoi) {
     .sort();
 }
 
+function quenMatKhau() {
+  const sel = document.getElementById("quen_user");
+  sel.innerHTML = "<option value=''>-- Chọn người --</option>";
+
+  DS_USER_GT.forEach(u => {
+    const opt = document.createElement("option");
+    opt.value = opt.textContent = u;
+    sel.appendChild(opt);
+  });
+
+  document.getElementById("popupQuenMK").style.display = "flex";
+}
+
+function dongQuenMK() {
+  document.getElementById("popupQuenMK").style.display = "none";
+}
+
+function guiYeuCauQuenMK() {
+  const user = document.getElementById("quen_user").value;
+  if (!user) {
+    alert("Vui lòng chọn người xử lý");
+    return;
+  }
+
+  fetch(API_ROOT + "/api/quen-mat-khau", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: user,
+      thoi_gian: new Date().toISOString()
+    })
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (!res.ok) throw res.msg;
+
+    alert("✅ Đã gửi yêu cầu. Vui lòng chờ quản trị xử lý.");
+    dongQuenMK();
+  })
+  .catch(err => {
+    alert("❌ " + err);
+  });
+}
+
 function capNhatNguoiXuLy() {
   const u = sessionStorage.getItem("GT_LOGIN_USER");
   const el = document.getElementById("nguoi_hienthi");
@@ -1674,15 +1724,16 @@ function dangNhap() {
   .then(res => {
     if (!res.ok) throw res.error;
 
-    // LƯU PHIÊN
     sessionStorage.setItem("GT_LOGIN_USER", res.user);
     sessionStorage.setItem("GT_ROLE", res.role);
 
-    // ===== GÁN CỐ ĐỊNH NGƯỜI XỬ LÝ =====
-    capNhatNguoiXuLy();   // chỉ cập nhật hiển thị
-
-
+    capNhatNguoiXuLy();
     document.getElementById("loginBox").style.display = "none";
+
+    // 🔥 ÉP ĐỔI MẬT KHẨU
+    if (res.must_change_pw) {
+      document.getElementById("popupDoiMK").style.display = "flex";
+    }
   })
   .catch(e => {
     err.textContent = e || "Đăng nhập thất bại";
@@ -2295,6 +2346,11 @@ function apDungBoLoc() {
   }
 }
 
+function toggleMatKhau(cb, inputId) {
+  const inp = document.getElementById(inputId);
+  inp.type = cb.checked ? "text" : "password";
+}
+
 function formatNgayDDMMYYYY(isoDate) {
   if (!isoDate) return "";
   const p = isoDate.split("-");
@@ -2370,6 +2426,50 @@ function capNhatSoLan() {
 
 document.getElementById("f_hocsinh").addEventListener("input", apDungBoLoc);
 
+function doiMatKhau() {
+  const old_pw  = document.getElementById("old_pw").value;
+  const new_pw  = document.getElementById("new_pw").value;
+  const new_pw2 = document.getElementById("new_pw2").value;
+
+  if (!old_pw || !new_pw || !new_pw2) {
+    alert("Vui lòng nhập đầy đủ thông tin");
+    return;
+  }
+
+  if (new_pw !== new_pw2) {
+    alert("Mật khẩu mới không khớp");
+    return;
+  }
+
+  const user = sessionStorage.getItem("GT_LOGIN_USER");
+  if (!user) {
+    alert("Phiên đăng nhập đã hết, vui lòng đăng nhập lại");
+    location.reload();
+    return;
+  }
+
+  fetch(API_ROOT + "/api/change_password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: user,
+      old_password: old_pw,
+      new_password: new_pw
+    })
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (!res.ok) throw res.msg;
+
+    alert("✅ Đổi mật khẩu thành công. Vui lòng đăng nhập lại.");
+    sessionStorage.clear();
+    location.reload();
+  })
+  .catch(err => {
+    alert("❌ " + err);
+  });
+}
+
 </script>
 
 <div id="popupSua" style="display:none; position:fixed; inset:0;
@@ -2383,6 +2483,48 @@ document.getElementById("f_hocsinh").addEventListener("input", apDungBoLoc);
 
     <button onclick="guiDeXuat()">Gửi đề xuất</button>
     <button onclick="dongDeXuat()" style="background:#999">Hủy</button>
+  </div>
+</div>
+<div id="popupDoiMK"
+     style="display:none; position:fixed; inset:0;
+            background:rgba(0,0,0,0.6); z-index:99999;
+            align-items:center; justify-content:center;">
+  <div style="background:white; padding:15px; width:90%; max-width:360px; border-radius:6px;">
+    <h3>🔐 Đổi mật khẩu</h3>
+
+    <input type="password" id="old_pw" placeholder="Mật khẩu hiện tại"><br>
+
+    <input type="password" id="new_pw" placeholder="Mật khẩu mới">
+    <label style="font-size:13px; display:block; margin-bottom:6px;">
+      <input type="checkbox" onchange="toggleMatKhau(this, 'new_pw')">
+      Hiện mật khẩu mới
+    </label>
+
+    <input type="password" id="new_pw2" placeholder="Nhập lại mật khẩu mới">
+    <label style="font-size:13px; display:block; margin-bottom:10px;">
+      <input type="checkbox" onchange="toggleMatKhau(this, 'new_pw2')">
+      Hiện mật khẩu nhập lại
+    </label>
+
+    <button onclick="doiMatKhau()">Lưu</button>
+  </div>
+</div>
+<div id="popupQuenMK"
+     style="display:none; position:fixed; inset:0;
+            background:rgba(0,0,0,0.6); z-index:99999;
+            align-items:center; justify-content:center;">
+  <div style="background:white; padding:15px; width:90%; max-width:360px; border-radius:6px;">
+    <h3>❓ Quên mật khẩu</h3>
+
+    <label>Người xử lý</label>
+    <select id="quen_user"></select>
+
+    <label style="font-size:13px;">
+      Yêu cầu sẽ được gửi tới quản trị hệ thống để đặt lại mật khẩu.
+    </label>
+
+    <button onclick="guiYeuCauQuenMK()">Gửi yêu cầu</button>
+    <button onclick="dongQuenMK()" style="background:#999">Hủy</button>
   </div>
 </div>
 
