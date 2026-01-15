@@ -345,7 +345,7 @@ tr.muc-3 {
 
 <script>
 const QUY_DINH_RAW = `
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Đi học muộn, vào lớp muộn từ 5 phút trở lên, tự ý ra khỏi lớp không có lý do chính đáng| 1
+NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Đi học muộn, vào lớp muộn từ 5 phút trở lên, tự ý ra khỏi lớp không có lý do chính đáng.| 1
 NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Ra về trước thời gian quy định mà chưa được sự đồng ý của Giáo viên chủ nhiệm/Ban giám hiệu| 1
 NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Không thông báo nghỉ học đúng quy định / sai hình thức (tin nhắn cá nhân, không email chính thức)| 1
 NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|“Cố tình tham gia sai nhóm hoặc hoạt động khác với nội dung, câu lạc bộ, Passion Hour đã đăng ký; hoặc không tham gia các hoạt động Passion Hour, học tập, ngoại khóa bắt buộc theo quy định của nhà trường.”| 1
@@ -2067,6 +2067,48 @@ function veBang() {
       console.error(err);
       tb.innerHTML =
         "<tr><td colspan='7'>❌ Không tải được dữ liệu</td></tr>";
+    });
+}
+
+function saveNewPassword() {
+    fetch("/api/change-password-first", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            username: currentUser,
+            new_password: newPassword
+        })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (!res.ok) {
+            alert(res.error);
+            return;
+        }
+
+        alert("Đổi mật khẩu thành công. Đang đăng nhập lại...");
+
+        // 🔥 LOGIN LẠI NGAY
+        fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                user: currentUser,
+                password: newPassword
+            })
+        })
+        .then(r => r.json())
+        .then(loginRes => {
+            if (!loginRes.ok) {
+                alert("Đăng nhập lại thất bại, vui lòng login thủ công");
+                location.reload();
+                return;
+            }
+
+            // ✅ lúc này must_change_pw = false
+            closePasswordPopup();
+            onLoginSuccess(loginRes);   // hàm bạn đang dùng khi login thành công
+        });
     });
 }
 
