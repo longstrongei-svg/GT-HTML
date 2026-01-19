@@ -73,6 +73,23 @@ tr.muc-3 {
   background-color: #ffcbcf; /* đỏ nhạt */
 }
 
+#viewer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+#viewer img {
+  max-width: 90%;
+  max-height: 90%;
+  background: white;
+  border-radius: 8px;
+}
+
 .img-preview {
   width: 50px;
   height: 50px;
@@ -81,6 +98,20 @@ tr.muc-3 {
   border: 1px solid #ccc;
   cursor: pointer;
 }
+.anh-mini {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin: 2px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+}
+
+.anh-mini:hover {
+  border-color: #1976d2;
+}
+
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -146,6 +177,10 @@ tr.muc-3 {
   <div class="tab" onclick="openTab(1)">📜 Lịch sử của tôi</div>
   <div class="tab" onclick="openTab(2)">📊 Toàn bộ lỗi</div>
 </div>
+<div id="viewer" onclick="this.style.display='none'">
+  <img id="viewerImg">
+</div>
+
 
 <!-- IMAGE PREVIEW OVERLAY -->
 <div id="imgViewer" onclick="dongAnh()"
@@ -263,8 +298,22 @@ tr.muc-3 {
 </div>
 
 <!-- input ẨN -->
-<input type="file" id="anh_chon" accept="image/*" style="display:none">
-<input type="file" id="anh_chup" accept="image/*" capture="environment" style="display:none">
+<input type="file"
+       id="anh_chon"
+       name="anh[]"
+       accept="image/*"
+       multiple
+       style="display:none">
+
+<input type="file"
+       id="anh_chup"
+       name="anh[]"
+       accept="image/*"
+       multiple
+       capture="environment"
+       style="display:none">
+
+
 
 <div id="preview_anh" style="margin-top:6px;"></div>
 
@@ -1479,6 +1528,8 @@ const DS_LOP_RAW = `
 11AB1	Đặng Bảo Hân
 11AB1	Đào Tuấn Hùng
 `.trim();
+/* ===== BIẾN TOÀN CỤC ===== */
+let dsAnh = [];   // Danh sách ảnh của 1 lỗi
 /* ====== CHUYỂN RAW → DS_LOP_HOC_SINH ====== */
 const DS_LOP_HOC_SINH = {};
 
@@ -1733,6 +1784,11 @@ function napUserDangNhap() {
 
 const API_ROOT = API.replace("/send", "");
 
+function xemAnh(src) {
+  document.getElementById("viewerImg").src = src;
+  document.getElementById("viewer").style.display = "flex";
+}
+
 function dangNhap() {
   const user = document.getElementById("login_user").value;
   const pass = document.getElementById("login_pass").value;
@@ -1802,6 +1858,26 @@ document.getElementById("vi_pham").addEventListener("change", function () {
 
   capDo.value = found ? found.capdo : "";
 });
+
+function renderTable(data) {
+  tbody.innerHTML = "";
+
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${row.stt}</td>
+      <td>${row.ngay}</td>
+      <td>${row.lop}</td>
+      <td>${row.ho_ten}</td>
+      <td>${row.vi_pham}</td>
+      <td>${renderAnh(row.anh_minh_chung)}</td>
+
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
 
 function openTab(i){
   document.querySelectorAll(".tab").forEach((t,n)=>t.classList.toggle("active",n===i));
@@ -1881,8 +1957,17 @@ let fileAnh = null;
 let previewURL = null;
 
 function moChonAnh() {
-  document.getElementById("anh_chon").click();
+  const inp = document.getElementById("anh_chon");
+  inp.click();
+
+  inp.onchange = () => {
+    for (const f of inp.files) {
+      dsAnh.push(f);
+    }
+    hienPreviewNhieuAnh();
+  };
 }
+
 
 function moChupAnh() {
   document.getElementById("anh_chup").click();
@@ -1953,6 +2038,10 @@ function xoaAnh() {
   document.getElementById("preview_anh").innerHTML = "";
 }
 
+function xoaAnh(i) {
+  dsAnh.splice(i, 1);
+  hienPreviewNhieuAnh();
+}
 
 function gui() {
   if (!ngay.value || !lop.value || !ho_ten.value || !vi_pham.value) {
@@ -1982,9 +2071,10 @@ function gui() {
   fd.append("diem_tru", diem_tru.value);
   fd.append("nguoi", nguoiDangNhap);
 
-  if (fileAnh) {
-    fd.append("anh", fileAnh);
-  }
+  dsAnh.forEach((f, i) => {
+    fd.append("anh[]", f);
+  });
+
 
   status.textContent = "⏳ Đang gửi dữ liệu...";
   status.className = "status wait";
@@ -2009,6 +2099,25 @@ function gui() {
 }
 
 
+function renderAnh(anhStr) {
+  if (!anhStr) return "";
+
+  const ds = anhStr.split("|");
+  let html = "";
+
+  ds.forEach(path => {
+    html += `
+      <img
+        src="${path}"
+        class="anh-mini"
+        onclick="xemAnh('${path}')"
+      >
+    `;
+  });
+
+  return html;
+}
+
 
 
 const ngayInput   = document.getElementById("ngay");
@@ -2024,6 +2133,25 @@ function capNhatNgayHienThi() {
 }
 
 ngayInput.addEventListener("change", capNhatNgayHienThi);
+
+function hienPreviewNhieuAnh() {
+  const box = document.getElementById("preview_anh");
+  box.innerHTML = "";
+
+  dsAnh.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    box.innerHTML += `
+      <div style="display:inline-block;position:relative;margin:4px">
+        <img src="${url}" class="img-preview"
+             onclick="xemAnh('${url}')">
+        <button onclick="xoaAnh(${i})"
+          style="position:absolute;top:-6px;right:-6px;
+                 background:#d32f2f;color:white;border:none;
+                 border-radius:50%;width:18px;height:18px">×</button>
+      </div>
+    `;
+  });
+}
 
 function veBang() {
   const tb = document.getElementById("lichsu");
