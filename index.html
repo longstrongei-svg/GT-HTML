@@ -188,22 +188,20 @@ tr.muc-3 {
 <select id="thoi_gian">
   <option value="">-- Chọn thời gian --</option>
 
-  <option>Đầu giờ sáng (07:00 – 08:00)</option>
-  <option>Tiết 1 + 2 (08:00 – 09:10)</option>
-  <option>Giờ ra chơi (09:10 – 09:25)</option>
-  <option>Tiết 3 + 4 (09:25 – 10:35)</option>
-  <option>Giờ ra chơi (10:35 – 10:50)</option>
-  <option>Tiết 5 + 6 (10:50 – 12:00)</option>
-
-  <option>Giờ ăn trưa (12:00 – 12:25)</option>
-  <option>Giờ CLB trưa (12:25 – 13:15)</option>
-
-  <option>Tiết 7 + 8 (13:15 – 14:25)</option>
-  <option>Giờ ăn nhẹ (14:25 – 14:45)</option>
-  <option>Tiết 9 + 10 (14:45 – 15:55)</option>
-  <option>Giờ ra về (15:55 – 16:30)</option>
+  <option>Đầu giờ sáng (07:00 - 08:00)</option>
+  <option>Tiết 1+2 (08:00 - 09:10)</option>
+  <option>Giờ ra chơi (09:10 - 09:20)</option>
+  <option>Tiết 3+4 (09:20 - 10:30)</option>
+  <option>Giờ ra chơi (10:30 - 10:40)</option>
+  <option>Tiết 5+6 (10:40 - 11:50)</option>
+  <option>Giờ nghỉ ăn trưa (11:50 - 12:50)</option>
+  <option>Tiết 7+8 (12:50 - 14:00)</option>
+  <option>Giờ ra chơi (14:00 - 14:10)</option>
+  <option>Tiết 9+10 (14:10 - 15:20)</option>
+  <option>Quà chiều (15:20 - 15:40)</option>
+  <option>Giờ chủ nhiệm/Phụ đạo (15:40 - 16:05)</option>
+  <option>Giờ ra về (16:05 - 16:30)</option>
 </select>
-
 
 <label>Loại</label>
 <select id="loai"></select>
@@ -1541,7 +1539,6 @@ function guiYeuCauQuenMK() {
 
   fetch(API_ROOT + "/api/quen-mat-khau", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       username: user,
       thoi_gian: new Date().toISOString()
@@ -1681,49 +1678,30 @@ function dongDeXuat(){
 }
 
 function guiDeXuat() {
-  const lyDo = document.getElementById("noi_dung_sua").value.trim();
-  if (!lyDo) {
-    alert("Vui lòng nhập nội dung đề xuất sửa");
-    return;
+  const noiDung = document.getElementById("noi_dung_sua").value;
+  const file = document.getElementById("anh_minh_chung")?.files[0];
+
+  const formData = new FormData();
+  formData.append("noi_dung", noiDung);
+
+  if (file) {
+    formData.append("anh", file);
   }
 
-  // 🔒 LẤY NGƯỜI ĐANG ĐĂNG NHẬP
-  const nguoiDangNhap = sessionStorage.getItem("GT_LOGIN_USER");
-  if (!nguoiDangNhap) {
-    alert("Phiên đăng nhập đã hết, vui lòng đăng nhập lại");
-    return;
-  }
-
-  // 🔑 SUA_ID được gán khi bấm nút ✏️ Đề xuất sửa
-  if (!SUA_ID) {
-    alert("Không xác định được lỗi cần sửa");
-    return;
-  }
-
-  const payload = {
-    id: SUA_ID,                 // 🔑 DUY NHẤT để định danh lỗi
-    noi_dung_sua: lyDo,
-    nguoi_gui: nguoiDangNhap,
-    thoi_gian_gui: new Date().toISOString()
-  };
-
-  fetch(API.replace("/send", "/api/de-xuat-sua"), {
+  fetch("/api/gui_de_xuat", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: formData   // ✅ KHÔNG SET headers
   })
   .then(r => r.json())
-  .then(res => {
-    if (!res.ok) throw res.error;
-
-    alert("✅ Đã gửi đề xuất sửa – chờ duyệt");
-    dongDeXuat();
+  .then(d => {
+    alert(d.msg || "Đã gửi");
   })
   .catch(err => {
+    alert("Không kết nối được máy chủ");
     console.error(err);
-    alert("❌ Không gửi được đề xuất sửa");
   });
 }
+
 
 // ===== DANH SÁCH GIÁM THỊ =====
 const DS_USER_GT = [
@@ -1769,7 +1747,6 @@ function dangNhap() {
 
   fetch(API_ROOT + "/api/login", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       user: user,
       password: pass
@@ -1984,9 +1961,7 @@ function gui() {
     return;
   }
 
-  // 🔒 LẤY NGƯỜI XỬ LÝ DUY NHẤT TỪ PHIÊN ĐĂNG NHẬP
   const nguoiDangNhap = sessionStorage.getItem("GT_LOGIN_USER");
-
   if (!nguoiDangNhap) {
     status.textContent = "⚠️ Phiên đăng nhập đã hết – vui lòng đăng nhập lại";
     status.className = "status err";
@@ -1994,36 +1969,22 @@ function gui() {
     return;
   }
 
-  const data = {
-    ngay: ngay.value,
-    lop: lop.value,
-    ho_ten: ho_ten.value,
-    thoi_gian: thoi_gian.value,
-    loai: loai.value,
-    vi_pham: vi_pham.value,
-    cap_do: cap_do.value,
-    mo_ta: mo_ta.value,
-    hinh_thuc: hinh_thuc.value,
-    diem_tru: diem_tru.value,
-    nguoi: nguoiDangNhap   // ✅ DUY NHẤT – KHÔNG LẤY TỪ HTML
-  };
-
-  // ===== 1. TẠO BẢN GHI LỊCH SỬ (CHƯA GỬI) =====
-  const ds = getData();
-  const historyItem = {
-    ...data,
-    sent: false,
-    thoi_diem_gui: new Date().toISOString()
-  };
-  ds.push(historyItem);
-  saveData(ds);
-
-  const idx = ds.length - 1;
-
-  // ===== 2. GỬI SERVER =====
+  // ===== FORM DATA – KHÔNG JSON =====
   const fd = new FormData();
-  fd.append("data", JSON.stringify(data));
-  if (fileAnh) fd.append("anh", fileAnh);
+  fd.append("ngay", ngay.value);
+  fd.append("lop", lop.value);
+  fd.append("ho_ten", ho_ten.value);
+  fd.append("thoi_gian", thoi_gian.value);
+  fd.append("loai", loai.value);
+  fd.append("vi_pham", vi_pham.value);
+  fd.append("mo_ta", mo_ta.value);
+  fd.append("hinh_thuc", hinh_thuc.value);
+  fd.append("diem_tru", diem_tru.value);
+  fd.append("nguoi", nguoiDangNhap);
+
+  if (fileAnh) {
+    fd.append("anh", fileAnh);
+  }
 
   status.textContent = "⏳ Đang gửi dữ liệu...";
   status.className = "status wait";
@@ -2036,19 +1997,13 @@ function gui() {
   .then(res => {
     if (!res.ok) throw res.error;
 
-    const ds2 = getData();
-    ds2[idx].sent = true;
-    ds2[idx].stt  = res.stt || null;
-    ds2[idx].ngay = res.ngay || ds2[idx].ngay;
-    saveData(ds2);
-
     status.textContent = "✅ Gửi lỗi thành công";
     status.className = "status ok";
   })
   .catch(err => {
     console.error(err);
     status.textContent =
-      "⚠️ Không kết nối được máy chủ – đã lưu vào lịch sử";
+      "⚠️ Không kết nối được máy chủ – dữ liệu chưa gửi";
     status.className = "status err";
   });
 }
@@ -2126,7 +2081,6 @@ function veBang() {
 function saveNewPassword() {
     fetch("/api/change-password-first", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             username: currentUser,
             new_password: newPassword
@@ -2144,7 +2098,6 @@ function saveNewPassword() {
         // 🔥 LOGIN LẠI NGAY
         fetch("/api/login", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 user: currentUser,
                 password: newPassword
@@ -2443,6 +2396,36 @@ function apDungBoLoc() {
   }
 }
 
+function guiPM() {
+  const fd = new FormData();
+
+  fd.append("lop", document.getElementById("lop").value);
+  fd.append("ho_ten", document.getElementById("ho_ten").value);
+  fd.append("noi_dung", document.getElementById("noi_dung").value);
+
+  const fileInput = document.getElementById("anh_pm");
+  if (fileInput.files.length > 0) {
+    fd.append("anh", fileInput.files[0]);
+  }
+
+  fetch("/gui_pm", {
+    method: "POST",
+    body: fd           // ✅ KHÔNG headers
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.ok) {
+      alert("Đã gửi PM");
+    } else {
+      alert("Lỗi: " + data.error);
+    }
+  })
+  .catch(err => {
+    alert("Không kết nối được máy chủ");
+    console.error(err);
+  });
+}
+
 function toggleMatKhau(cb, inputId) {
   const inp = document.getElementById(inputId);
   inp.type = cb.checked ? "text" : "password";
@@ -2547,7 +2530,6 @@ function doiMatKhau() {
 
   fetch(API_ROOT + "/api/change_password", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       username: user,
       old_password: old_pw,
