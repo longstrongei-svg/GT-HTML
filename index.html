@@ -378,6 +378,7 @@ tr.muc-3 {
         <th>Thời gian</th>
         <th>Loại</th>
         <th>Vi phạm</th>
+        <th>Mô tả</th>        
         <th>Cấp độ</th>
         <th>Số lần</th>
         <th>Điểm trừ</th>
@@ -1860,24 +1861,31 @@ document.getElementById("vi_pham").addEventListener("change", function () {
 });
 
 function renderTable(data) {
+  const tbody = document.getElementById("all_loi");
   tbody.innerHTML = "";
 
   data.forEach(row => {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-      <td>${row.stt}</td>
       <td>${row.ngay}</td>
       <td>${row.lop}</td>
-      <td>${row.ho_ten}</td>
+      <td>${row.hoc_sinh}</td>
+      <td>${row.thoi_gian || ""}</td>
+      <td>${row.loai}</td>
       <td>${row.vi_pham}</td>
-      <td>${renderAnh(row.anh_minh_chung)}</td>
-
+      <td>${row.mo_ta || ""}</td>
+      <td>${row.cap_do}</td>
+      <td>${row.so_lan}</td>
+      <td>${row.diem_tru}</td>
+      <td>${row.nguoi}</td>
+      <td>${renderAnh(row.anh)}</td>
     `;
 
     tbody.appendChild(tr);
   });
 }
+
 
 function openTab(i){
   document.querySelectorAll(".tab").forEach((t,n)=>t.classList.toggle("active",n===i));
@@ -2510,6 +2518,7 @@ function apDungBoLoc() {
           <td>${i.thoi_gian || ""}</td>
           <td>${i.loai || ""}</td>
           <td>${i.vi_pham || ""}</td>
+          <td>${i.mo_ta || ""}</td>          <!-- ✅ BỔ SUNG -->
           <td>${i.cap_do || ""}</td>
           <td style="text-align:center">${soLan}</td>
           <td style="text-align:center">${i.diem_tru ?? 0}</td>
@@ -2517,6 +2526,7 @@ function apDungBoLoc() {
           <td style="text-align:center">${imgHtml}</td>
         </tr>
       `;
+
     });
 
   if (!tb.innerHTML) {
