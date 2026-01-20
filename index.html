@@ -2494,7 +2494,7 @@ function apDungBoLoc() {
       (!fLop   || i.lop === fLop) &&
       (!fVP    || i.vi_pham === fVP) &&
       (!fNguoi || i.nguoi === fNguoi) &&
-      (!fHS    || (i.ho_ten || "").toLowerCase().includes(fHS))
+      (!fHS    || (i.hoc_sinh || "").toLowerCase().includes(fHS)) // ✅ SỬA
     )
     .forEach(i => {
 
@@ -2514,11 +2514,11 @@ function apDungBoLoc() {
         <tr class="${rowClass}">
           <td>${formatNgayDDMMYYYY(i.ngay)}</td>
           <td>${i.lop || ""}</td>
-          <td>${i.ho_ten || ""}</td>
+          <td>${i.hoc_sinh || ""}</td>      <!-- ✅ SỬA -->
           <td>${i.thoi_gian || ""}</td>
           <td>${i.loai || ""}</td>
           <td>${i.vi_pham || ""}</td>
-          <td>${i.mo_ta || ""}</td>          <!-- ✅ BỔ SUNG -->
+          <td>${i.mo_ta || ""}</td>
           <td>${i.cap_do || ""}</td>
           <td style="text-align:center">${soLan}</td>
           <td style="text-align:center">${i.diem_tru ?? 0}</td>
@@ -2526,13 +2526,13 @@ function apDungBoLoc() {
           <td style="text-align:center">${imgHtml}</td>
         </tr>
       `;
-
     });
 
   if (!tb.innerHTML) {
-    tb.innerHTML = `<tr><td colspan="11">Không có dữ liệu phù hợp</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="12">Không có dữ liệu phù hợp</td></tr>`;
   }
 }
+
 
 function guiPM() {
   const fd = new FormData();
