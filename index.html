@@ -244,7 +244,7 @@ tr.muc-3 {
 <label>Vi phạm *</label>
 <select id="vi_pham"></select>
 
-<label>Cấp độ</label>
+<label>Mức độ</label>
 <input id="cap_do" readonly>
 
 <label>Mô tả</label>
@@ -379,7 +379,7 @@ tr.muc-3 {
         <th>Loại</th>
         <th>Vi phạm</th>
         <th>Mô tả</th>        
-        <th>Cấp độ</th>
+        <th>Mức độ</th>
         <th>Số lần</th>
         <th>Điểm trừ</th>
         <th>Người xử lý</th>
@@ -1695,7 +1695,7 @@ const QUY_DINH_VI_PHAM = QUY_DINH_RAW
     return {
       loai: loai.trim(),
       vipham: vipham.trim(),
-      capdo: "Cấp độ " + cap.trim()
+      capdo: "Mức độ " + cap.trim()
     };
   });
 
@@ -2494,8 +2494,10 @@ function apDungBoLoc() {
       (!fLop   || i.lop === fLop) &&
       (!fVP    || i.vi_pham === fVP) &&
       (!fNguoi || i.nguoi === fNguoi) &&
-      (!fHS    || (i.hoc_sinh || "").toLowerCase().includes(fHS)) // ✅ SỬA
+      (!fHS    || (i.hoc_sinh || "").toLowerCase().includes(fHS))
     )
+    .slice()      // ✅ tránh làm thay đổi ALL_DATA gốc
+    .reverse()    // ✅ nhập sau → hiển thị trước
     .forEach(i => {
 
       const soLan = Number(i.so_lan ?? 1);
@@ -2514,7 +2516,7 @@ function apDungBoLoc() {
         <tr class="${rowClass}">
           <td>${formatNgayDDMMYYYY(i.ngay)}</td>
           <td>${i.lop || ""}</td>
-          <td>${i.hoc_sinh || ""}</td>      <!-- ✅ SỬA -->
+          <td>${i.hoc_sinh || ""}</td>
           <td>${i.thoi_gian || ""}</td>
           <td>${i.loai || ""}</td>
           <td>${i.vi_pham || ""}</td>
@@ -2532,6 +2534,7 @@ function apDungBoLoc() {
     tb.innerHTML = `<tr><td colspan="12">Không có dữ liệu phù hợp</td></tr>`;
   }
 }
+
 
 
 function guiPM() {
@@ -2624,7 +2627,7 @@ function capNhatSoLan() {
         soLanEl.value = soLan;
 
         const capGoc = layCapDoGoc();
-        capDoEl.value = "Cấp độ " + tinhCapDoMoi(capGoc, soLan);
+        capDoEl.value = "Mức độ " + tinhCapDoMoi(capGoc, soLan);
       })
       .catch(() => {
         soLanEl.value = "1";
