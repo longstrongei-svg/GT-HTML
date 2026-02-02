@@ -1553,6 +1553,48 @@ DS_LOP_RAW
     DS_LOP_HOC_SINH[lop].push(ten);
   });
 
+/* ===== OFFLINE QUEUE ===== */
+const KEY_PENDING = "GT_PENDING_QUEUE";
+
+function capNhatHocSinhSua() {
+  const lop = document.getElementById("sua_lop").value;
+  const hs = HOC_SINH.filter(h => h.lop === lop);
+  const sel = document.getElementById("sua_ho_ten");
+  sel.innerHTML = hs.map(h => `<option>${h.ten}</option>`).join("");
+}
+
+function capNhatViPhamSua() {
+  const loai = document.getElementById("sua_loai").value;
+  const vp = QUY_DINH_RAW[loai] || [];
+  const sel = document.getElementById("sua_vi_pham");
+  sel.innerHTML = vp.map(v => `<option>${v.noi_dung}</option>`).join("");
+}
+
+function dongDeXuat() {
+  document.getElementById("popupSua").style.display = "none";
+}
+
+
+function getPendingQueue() {
+  return JSON.parse(localStorage.getItem(KEY_PENDING) || "[]");
+}
+
+function savePendingQueue(q) {
+  localStorage.setItem(KEY_PENDING, JSON.stringify(q));
+}
+
+function addPending(item) {
+  const q = getPendingQueue();
+  q.unshift(item);
+  savePendingQueue(q);
+}
+
+function removePending(localId) {
+  savePendingQueue(
+    getPendingQueue().filter(x => x.localId !== localId)
+  );
+}
+  
 function layLopTheoKhoi(khoi) {
   return Object.keys(DS_LOP_HOC_SINH)
     .filter(lop => {
@@ -1804,12 +1846,10 @@ function dangNhap() {
 
   err.textContent = "⏳ Đang xác thực...";
 
+  // Thử gọi lên server như cũ
   fetch(API_ROOT + "/api/login", {
     method: "POST",
-    body: JSON.stringify({
-      user: user,
-      password: pass
-    })
+    body: JSON.stringify({ user, password: pass })
   })
   .then(r => r.json())
   .then(res => {
@@ -1821,15 +1861,31 @@ function dangNhap() {
     capNhatNguoiXuLy();
     document.getElementById("loginBox").style.display = "none";
 
-    // 🔥 ÉP ĐỔI MẬT KHẨU
     if (res.must_change_pw) {
       document.getElementById("popupDoiMK").style.display = "flex";
     }
   })
-  .catch(e => {
-    err.textContent = e || "Đăng nhập thất bại";
+  .catch(() => {
+    // 🔁 Nếu server tắt → fallback offline login
+    const DS_USER_GT = [
+      "GT Trần Duy Linh", "GT Đỗ Mạnh Toàn", "GT Phan Tuấn Anh",
+      "GT Đỗ Thị Hường", "GT Lê Nhật Long", "GT Nguyễn Văn Hà",
+      "GT Lê Trung Kiên", "GT Hoàng Quang Trung", "GT Nguyễn Trà My",
+      "GT Ngô Thị Ngọc Ánh", "GT Nguyễn Sơn Thành"
+    ];
+
+    if (DS_USER_GT.includes(user)) {
+      sessionStorage.setItem("GT_LOGIN_USER", user);
+      sessionStorage.setItem("GT_ROLE", "offline");
+
+      capNhatNguoiXuLy();
+      document.getElementById("loginBox").style.display = "none";
+    } else {
+      err.textContent = "Không thể kết nối server và tài khoản không hỗ trợ offline";
+    }
   });
 }
+
 
 document.getElementById("loai").addEventListener("change", function () {
   const loai = this.value;
@@ -2053,7 +2109,7 @@ function xoaAnh(i) {
   hienPreviewNhieuAnh();
 }
 
-function gui() {
+async function gui() {
   if (!ngay.value || !lop.value || !ho_ten.value || !vi_pham.value) {
     status.textContent = "⚠️ Thiếu thông tin bắt buộc";
     status.className = "status err";
@@ -2062,13 +2118,12 @@ function gui() {
 
   const nguoiDangNhap = sessionStorage.getItem("GT_LOGIN_USER");
   if (!nguoiDangNhap) {
-    status.textContent = "⚠️ Phiên đăng nhập đã hết – vui lòng đăng nhập lại";
+    status.textContent = "⚠️ Phiên đăng nhập đã hết";
     status.className = "status err";
     document.getElementById("loginBox").style.display = "flex";
     return;
   }
 
-  // ===== FORM DATA – KHÔNG JSON =====
   const fd = new FormData();
   fd.append("ngay", ngay.value);
   fd.append("lop", lop.value);
@@ -2081,32 +2136,71 @@ function gui() {
   fd.append("diem_tru", diem_tru.value);
   fd.append("nguoi", nguoiDangNhap);
 
-  dsAnh.forEach((f, i) => {
-    fd.append("anh[]", f);
-  });
-
+  dsAnh.forEach(f => fd.append("anh[]", f));
 
   status.textContent = "⏳ Đang gửi dữ liệu...";
   status.className = "status wait";
 
-  fetch(API, {
-    method: "POST",
-    body: fd
-  })
-  .then(r => r.json())
-  .then(res => {
+  try {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 5000);
+
+    const r = await fetch(API, {
+      method: "POST",
+      body: fd,
+      signal: controller.signal
+    });
+
+    const res = await r.json();
     if (!res.ok) throw res.error;
 
-    status.textContent = "✅ Gửi lỗi thành công";
+    status.textContent = "✅ Gửi thành công";
     status.className = "status ok";
-  })
-  .catch(err => {
-    console.error(err);
+  } catch (e) {
+    addPending({
+      localId: "LOCAL_" + Date.now(),
+      status: "pending",
+      nguoi: nguoiDangNhap,
+      ngay: ngay.value,
+      lop: lop.value,
+      ho_ten: ho_ten.value,
+      thoi_gian: thoi_gian.value,
+      loai: loai.value,
+      vi_pham: vi_pham.value,
+      mo_ta: mo_ta.value,
+      hinh_thuc: hinh_thuc.value,
+      diem_tru: diem_tru.value
+    });
+
     status.textContent =
-      "⚠️ Không kết nối được máy chủ – dữ liệu chưa gửi";
+      "⚠️ Server đang tắt – đã lưu vào Lịch sử (Chưa gửi)";
     status.className = "status err";
+
+    veBang();
+  }
+}
+
+function renderPending(tb, list) {
+  list.forEach(p => {
+    tb.innerHTML += `
+      <tr>
+        <td>${formatNgayDDMMYYYY(p.ngay)}</td>
+        <td>${p.lop}</td>
+        <td>${p.ho_ten}</td>
+        <td>${p.vi_pham}</td>
+        <td>${p.thoi_gian || ""}</td>
+        <td class="pending">Chưa gửi</td>
+        <td class="action">
+          <button class="btn resend"
+            onclick="guiLaiPending('${p.localId}')">🔁 Gửi lại</button>
+          <button class="btn delete"
+            onclick="xoaPending('${p.localId}')">🗑️ Xóa</button>
+        </td>
+      </tr>
+    `;
   });
 }
+
 
 
 function renderAnh(anhStr) {
@@ -2164,57 +2258,94 @@ function hienPreviewNhieuAnh() {
 }
 
 function veBang() {
-  const tb = document.getElementById("lichsu");
-  tb.innerHTML = "<tr><td colspan='7'>⏳ Đang tải dữ liệu...</td></tr>";
+const tb = document.getElementById("lichsu");
+tb.innerHTML = "<tr><td colspan='7'>⏳ Đang tải dữ liệu...</td></tr>";
 
-  const user = sessionStorage.getItem("GT_LOGIN_USER");
-  if (!user) {
-    tb.innerHTML = "<tr><td colspan='7'>Chưa đăng nhập</td></tr>";
-    return;
-  }
 
-  const API_ROOT = API.replace("/send", "");
-  const url = API_ROOT + "/api/my?nguoi=" + encodeURIComponent(user);
-
-  fetch(url)
-    .then(r => r.json())
-    .then(ds => {
-      if (!Array.isArray(ds) || ds.length === 0) {
-        tb.innerHTML = "<tr><td colspan='7'>Chưa có lỗi nào</td></tr>";
-        return;
-      }
-
-      tb.innerHTML = "";
-      ds.forEach(i => {
-        tb.innerHTML += `
-          <tr>
-            <td>${formatNgayDDMMYYYY(i.ngay)}</td>
-            <td>${i.lop || ""}</td>
-            <td>${i.ho_ten || ""}</td>
-            <td>${i.vi_pham || ""}</td>
-            <td>${i.thoi_gian || ""}</td>
-            <td class="sent">Đã gửi</td>
-            <td class="action">
-              <button class="btn resend"
-                      onclick="guiLaiDB(${i.id})">🔁 Gửi lại</button>
-
-              <button class="btn delete"
-                      onclick="xoaDB(${i.id})">🗑️ Xóa</button>
-
-              <button class="btn edit"
-                      onclick="deXuatSuaDB(${i.id})">✏️ Đề xuất sửa</button>
-            </td>
-          </tr>
-        `;
-      });
-
-    })
-    .catch(err => {
-      console.error(err);
-      tb.innerHTML =
-        "<tr><td colspan='7'>❌ Không tải được dữ liệu</td></tr>";
-    });
+const user = sessionStorage.getItem("GT_LOGIN_USER");
+if (!user) {
+tb.innerHTML = "<tr><td colspan='7'>Chưa đăng nhập</td></tr>";
+return;
 }
+
+
+const API_ROOT = API.replace("/send", "");
+const url = API_ROOT + "/api/my?nguoi=" + encodeURIComponent(user);
+
+
+fetch(url)
+.then(r => r.json())
+.then(ds => {
+if (!Array.isArray(ds) || ds.length === 0) {
+tb.innerHTML = "<tr><td colspan='7'>Chưa có lỗi nào</td></tr>";
+return;
+}
+
+
+tb.innerHTML = "";
+ds.forEach(i => {
+tb.innerHTML += `
+<tr>
+<td>${formatNgayDDMMYYYY(i.ngay)}</td>
+<td>${i.lop || ""}</td>
+<td>${i.ho_ten || ""}</td>
+<td>${i.vi_pham || ""}</td>
+<td>${i.thoi_gian || ""}</td>
+<td class="sent">Đã gửi</td>
+<td class="action">
+<button class="btn resend" onclick="guiLaiDB(${i.id})">🔁 Gửi lại</button>
+<button class="btn delete" onclick="xoaDB(${i.id})">🗑️ Xóa</button>
+<button class="btn edit" onclick="suaTrucTiepDB(${i.id})">✏️ Sửa</button>
+</td>
+</tr>
+`;
+});
+
+
+})
+.catch(() => {
+tb.innerHTML = "";
+const user = sessionStorage.getItem("GT_LOGIN_USER");
+const pending = getPendingQueue().filter(x => x.nguoi === user);
+renderPending(tb, pending);
+
+
+if (tb.innerHTML === "")
+tb.innerHTML = "<tr><td colspan='7'>Server tắt</td></tr>";
+});
+}
+
+async function guiLaiPending(localId) {
+  const item = getPendingQueue().find(x => x.localId === localId);
+  if (!item) return;
+
+  const fd = new FormData();
+  Object.entries(item).forEach(([k, v]) => {
+    if (!["localId", "status"].includes(k)) fd.append(k, v || "");
+  });
+
+  try {
+    const r = await fetch(API, { method: "POST", body: fd });
+    const res = await r.json();
+    if (!res.ok) throw res.error;
+
+    removePending(localId);
+    alert("✅ Đã gửi lại");
+    veBang();
+  } catch {
+    alert("⚠️ Server vẫn chưa mở");
+  }
+}
+
+function xoaPending(localId) {
+  if (!confirm("Xóa lỗi chưa gửi?")) return;
+  removePending(localId);
+  veBang();
+}
+
+window.addEventListener("online", () => {
+  getPendingQueue().forEach(p => guiLaiPending(p.localId));
+});
 
 function saveNewPassword() {
     fetch("/api/change-password-first", {
@@ -2354,6 +2485,38 @@ function guiLai(i){
   });
 }
 
+
+function guiSuaThucTe() {
+  const fd = new FormData();
+  fd.append("id", SUA_ID);
+  fd.append("ngay", document.getElementById("sua_ngay").value);
+  fd.append("lop", document.getElementById("sua_lop").value);
+  fd.append("ho_ten", document.getElementById("sua_ho_ten").value);
+  fd.append("thoi_gian", document.getElementById("sua_thoi_gian").value);
+  fd.append("loai", document.getElementById("sua_loai").value);
+  fd.append("vi_pham", document.getElementById("sua_vi_pham").value);
+  fd.append("mo_ta", document.getElementById("sua_mo_ta").value);
+  fd.append("hinh_thuc", document.getElementById("sua_hinh_thuc").value);
+  fd.append("diem_tru", document.getElementById("sua_diem_tru").value);
+
+  fetch(API.replace("/send", "") + "/api/update", {
+    method: "POST",
+    body: fd
+  })
+    .then(r => r.json())
+    .then(res => {
+      if (res.ok) {
+        alert("✅ Đã sửa thành công");
+        document.getElementById("popupSua").style.display = "none";
+        veBang();
+      } else {
+        alert("❌ Lỗi khi sửa: " + res.error);
+      }
+    })
+    .catch(() => {
+      alert("❌ Không thể kết nối máy chủ");
+    });
+}
 
 function xoa(i){
   if (!confirm("Xóa dòng lỗi này khỏi lịch sử?")) return;
@@ -2694,19 +2857,179 @@ function doiMatKhau() {
 
 </script>
 
-<div id="popupSua" style="display:none; position:fixed; inset:0;
-     background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:white; padding:15px; width:95%; max-width:420px; border-radius:6px;">
-    <h3>📩 Đề xuất sửa lỗi</h3>
+<!-- ✅ POPUP SỬA ĐẦY ĐỦ GIỐNG HỆT TAB GỬI LỖI -->
+<div id="popupSua" style="
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #0008;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+">
+  <div style="
+    background: white;
+    padding: 20px;
+    width: 98%;
+    max-width: 520px;
+    max-height: 95%;
+    overflow-y: auto;
+    border-radius: 8px;
+    margin: 30px auto;
+  ">
+    <h3>✏️ Sửa lỗi đã ghi</h3>
 
-    <label>Nội dung đề xuất *</label>
-    <textarea id="noi_dung_sua" rows="4"
-      placeholder="Ví dụ: Nhập nhầm học sinh / sai thời gian / sai vi phạm..."></textarea>
+    <label>Ngày</label>
+    <input id="sua_ngay" type="date">
 
-    <button onclick="guiDeXuat()">Gửi đề xuất</button>
-    <button onclick="dongDeXuat()" style="background:#999">Hủy</button>
+    <label>Khối</label>
+    <select id="sua_khoi" onchange="capNhatLopSua()"></select>
+
+    <label>Lớp</label>
+    <select id="sua_lop" onchange="capNhatHocSinhSua()"></select>
+
+    <label>Họ tên học sinh</label>
+    <select id="sua_ho_ten"></select>
+
+    <label>Khung giờ</label>
+    <select id="sua_thoi_gian"></select>
+
+    <label>Loại lỗi</label>
+    <select id="sua_loai" onchange="capNhatViPhamSua()"></select>
+
+    <label>Vi phạm</label>
+    <select id="sua_vi_pham"></select>
+
+    <label>Mô tả chi tiết</label>
+    <textarea id="sua_mo_ta" rows="3"></textarea>
+
+    <label>Hình thức xử lý</label>
+    <input id="sua_hinh_thuc">
+
+    <label>Điểm trừ</label>
+    <input id="sua_diem_tru" type="number" min="0">
+
+    <div style="margin-top:10px">
+      <button onclick="guiSuaThucTe()">💾 LƯU SỬA</button>
+      <button onclick="dongDeXuat()" style="background:#ccc">Hủy</button>
+    </div>
   </div>
 </div>
+
+<script>
+function capNhatKhoiSua() {
+const sel = document.getElementById("sua_lop");
+const lopList = [...new Set(HOC_SINH.filter(h => h.khoi === khoi).map(h => h.lop))];
+sel.innerHTML = lopList.map(l => `<option>${l}</option>`).join("");
+capNhatHocSinhSua();
+}
+
+
+function capNhatHocSinhSua() {
+const lop = document.getElementById("sua_lop").value;
+const hs = HOC_SINH.filter(h => h.lop === lop);
+const sel = document.getElementById("sua_ho_ten");
+sel.innerHTML = hs.map(h => `<option>${h.ten}</option>`).join("");
+}
+
+
+function capNhatKhungGioSua() {
+const sel = document.getElementById("sua_thoi_gian");
+sel.innerHTML = KHUNG_GIO.map(k => `<option>${k}</option>`).join("");
+}
+
+
+function capNhatLoaiVaViPhamSua() {
+const sel = document.getElementById("sua_loai");
+sel.innerHTML = Object.keys(QUY_DINH_RAW).map(loai => `<option>${loai}</option>`).join("");
+capNhatViPhamSua();
+}
+
+
+function capNhatViPhamSua() {
+const loai = document.getElementById("sua_loai").value;
+const vp = QUY_DINH_RAW[loai] || [];
+const sel = document.getElementById("sua_vi_pham");
+sel.innerHTML = vp.map(v => `<option>${v.noi_dung}</option>`).join("");
+}
+
+
+function suaTrucTiepDB(id) {
+SUA_ID = id;
+
+
+fetch(API.replace("/send", "") + "/api/one?id=" + id)
+.then(r => r.json())
+.then(data => {
+if (!data || !data.id) return alert("Không tìm thấy dữ liệu");
+
+
+capNhatKhoiSua();
+capNhatKhungGioSua();
+capNhatLoaiVaViPhamSua();
+
+
+document.getElementById("sua_ngay").value = data.ngay;
+document.getElementById("sua_khoi").value = LOP_KHOI[data.lop];
+capNhatLopSua();
+const LOP_KHOI = {};
+Object.keys(DS_LOP_HOC_SINH).forEach(lop => {
+  if (/^[6-9]/.test(lop)) LOP_KHOI[lop] = "THCS";
+  else if (/^(10|11|12)/.test(lop)) LOP_KHOI[lop] = "THPT";
+});
+
+document.getElementById("sua_lop").value = data.lop;
+capNhatHocSinhSua();
+document.getElementById("sua_ho_ten").value = data.ho_ten;
+document.getElementById("sua_thoi_gian").value = data.thoi_gian;
+document.getElementById("sua_loai").value = data.loai;
+capNhatViPhamSua();
+document.getElementById("sua_vi_pham").value = data.vi_pham;
+document.getElementById("sua_mo_ta").value = data.mo_ta;
+document.getElementById("sua_hinh_thuc").value = data.hinh_thuc;
+document.getElementById("sua_diem_tru").value = data.diem_tru;
+
+
+document.getElementById("popupSua").style.display = "flex";
+})
+.catch(() => alert("Không thể tải dữ liệu để sửa"));
+}
+
+function suaTrucTiepDB(id) {
+  SUA_ID = id;
+
+  fetch(API.replace("/send", "") + "/api/one?id=" + id)
+    .then(r => r.json())
+    .then(data => {
+      if (!data || !data.id) return alert("Không tìm thấy dữ liệu");
+
+      capNhatKhoiSua();
+      capNhatKhungGioSua();
+      capNhatLoaiVaViPhamSua();
+
+      document.getElementById("sua_ngay").value = data.ngay;
+      document.getElementById("sua_khoi").value = LOP_KHOI[data.lop];
+      capNhatLopSua();
+      document.getElementById("sua_lop").value = data.lop;
+      capNhatHocSinhSua();
+      document.getElementById("sua_ho_ten").value = data.ho_ten;
+      document.getElementById("sua_thoi_gian").value = data.thoi_gian;
+      document.getElementById("sua_loai").value = data.loai;
+      capNhatViPhamSua();
+      document.getElementById("sua_vi_pham").value = data.vi_pham;
+      document.getElementById("sua_mo_ta").value = data.mo_ta;
+      document.getElementById("sua_hinh_thuc").value = data.hinh_thuc;
+      document.getElementById("sua_diem_tru").value = data.diem_tru;
+
+      document.getElementById("popupSua").style.display = "flex";
+    })
+    .catch(() => alert("Không thể tải dữ liệu để sửa"));
+}
+</script>
+
+
+
 <div id="popupDoiMK"
      style="display:none; position:fixed; inset:0;
             background:rgba(0,0,0,0.6); z-index:99999;
