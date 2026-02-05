@@ -1580,21 +1580,28 @@ function getPendingQueue() {
   return JSON.parse(localStorage.getItem(KEY_PENDING) || "[]");
 }
 
-function savePendingQueue(q) {
-  localStorage.setItem(KEY_PENDING, JSON.stringify(q));
+
+function savePendingQueue(queue) {
+  localStorage.setItem(KEY_PENDING, JSON.stringify(queue));
 }
 
 function addPending(item) {
-  const q = getPendingQueue();
-  q.unshift(item);
-  savePendingQueue(q);
+  const queue = getPendingQueue();
+  queue.unshift(item);  // Thêm lỗi vào đầu danh sách
+  savePendingQueue(queue);  // Lưu lại vào localStorage
 }
+
+function savePendingQueue(queue) {
+  localStorage.setItem(KEY_PENDING, JSON.stringify(queue));
+}
+
 
 function removePending(localId) {
   savePendingQueue(
     getPendingQueue().filter(x => x.localId !== localId)
   );
 }
+
   
 function layLopTheoKhoi(khoi) {
   return Object.keys(DS_LOP_HOC_SINH)
@@ -2203,7 +2210,6 @@ function renderPending(tb, list) {
 }
 
 
-
 function renderAnh(anhStr) {
   if (!anhStr) return "";
 
@@ -2259,61 +2265,103 @@ function hienPreviewNhieuAnh() {
 }
 
 function veBang() {
-const tb = document.getElementById("lichsu");
-tb.innerHTML = "<tr><td colspan='7'>⏳ Đang tải dữ liệu...</td></tr>";
+  const tb = document.getElementById("lichsu");
+  tb.innerHTML = "<tr><td colspan='7'>⏳ Đang tải dữ liệu...</td></tr>";
 
+  const user = sessionStorage.getItem("GT_LOGIN_USER");
+  if (!user) {
+    tb.innerHTML = "<tr><td colspan='7'>Chưa đăng nhập</td></tr>";
+    return;
+  }
 
-const user = sessionStorage.getItem("GT_LOGIN_USER");
-if (!user) {
-tb.innerHTML = "<tr><td colspan='7'>Chưa đăng nhập</td></tr>";
-return;
-}
+  const API_ROOT = API.replace("/send", "");
+  const url = API_ROOT + "/api/my?nguoi=" + encodeURIComponent(user);
 
+  // Lấy danh sách pending từ localStorage
+  const pendingQueue = getPendingQueue();
+  const pendingOfUser = pendingQueue.filter(x => x.nguoi === user);
 
-const API_ROOT = API.replace("/send", "");
-const url = API_ROOT + "/api/my?nguoi=" + encodeURIComponent(user);
+  fetch(url)
+    .then(r => r.json())
+    .then(ds => {
+      // Kiểm tra xem ds có phải là mảng không
+      if (!Array.isArray(ds)) {
+        ds = [];
+      }
+      
+      // Kết hợp dữ liệu từ server và pending
+      const allItems = [
+        // Dữ liệu từ server (đã gửi)
+        ...ds.map(item => ({
+          ...item,
+          source: 'server',
+          status: 'sent'
+        })),
+        // Dữ liệu pending (chưa gửi)
+        ...pendingOfUser.map(item => ({
+          ...item,
+          source: 'pending',
+          status: 'pending',
+          id: item.localId // Dùng localId thay cho id
+        }))
+      ];
 
+      // Sắp xếp theo thời gian (mới nhất lên đầu)
+      allItems.sort((a, b) => {
+        const dateA = new Date(a.ngay || '1970-01-01');
+        const dateB = new Date(b.ngay || '1970-01-01');
+        return dateB - dateA;
+      });
 
-fetch(url)
-.then(r => r.json())
-.then(ds => {
-if (!Array.isArray(ds) || ds.length === 0) {
-tb.innerHTML = "<tr><td colspan='7'>Chưa có lỗi nào</td></tr>";
-return;
-}
+      if (allItems.length === 0) {
+        tb.innerHTML = "<tr><td colspan='7'>Chưa có lỗi nào</td></tr>";
+        return;
+      }
 
+      tb.innerHTML = "";
+      allItems.forEach(item => {
+        const isPending = item.source === 'pending';
+        const statusText = isPending ? "Chưa gửi" : "Đã gửi";
+        const statusClass = isPending ? "pending" : "sent";
+        const itemId = isPending ? item.localId : item.id;
 
-tb.innerHTML = "";
-ds.forEach(i => {
-tb.innerHTML += `
-<tr>
-<td>${formatNgayDDMMYYYY(i.ngay)}</td>
-<td>${i.lop || ""}</td>
-<td>${i.ho_ten || ""}</td>
-<td>${i.vi_pham || ""}</td>
-<td>${i.thoi_gian || ""}</td>
-<td class="sent">Đã gửi</td>
-<td class="action">
-<button class="btn resend" onclick="guiLaiDB(${i.id})">🔁 Gửi lại</button>
-<button class="btn delete" onclick="xoaDB(${i.id})">🗑️ Xóa</button>
-<button class="btn edit" onclick="suaTrucTiepDB(${i.id})">✏️ Sửa</button>
-</td>
-</tr>
-`;
-});
-
-
-})
-.catch(() => {
-tb.innerHTML = "";
-const user = sessionStorage.getItem("GT_LOGIN_USER");
-const pending = getPendingQueue().filter(x => x.nguoi === user);
-renderPending(tb, pending);
-
-
-if (tb.innerHTML === "")
-tb.innerHTML = "<tr><td colspan='7'>Server tắt</td></tr>";
-});
+        tb.innerHTML += `
+          <tr>
+            <td>${formatNgayDDMMYYYY(item.ngay)}</td>
+            <td>${item.lop || ""}</td>
+            <td>${item.ho_ten || ""}</td>
+            <td>${item.vi_pham || ""}</td>
+            <td>${item.thoi_gian || ""}</td>
+            <td class="${statusClass}">${statusText}</td>
+            <td class="action">
+              ${isPending ? `
+                <button class="btn resend" 
+                  onclick="guiLaiPending('${itemId}')">🔁 Gửi lại</button>
+                <button class="btn delete" 
+                  onclick="xoaPending('${itemId}')">🗑️ Xóa</button>
+              ` : `
+                <button class="btn resend" 
+                  onclick="guiLaiDB(${itemId})">🔁 Gửi lại</button>
+                <button class="btn delete" 
+                  onclick="xoaDB(${itemId})">🗑️ Xóa</button>
+                <button class="btn edit" 
+                  onclick="suaTrucTiepDB(${itemId})">✏️ Sửa</button>
+              `}
+            </td>
+          </tr>
+        `;
+      });
+    })
+    .catch(() => {
+      // Nếu không kết nối được server, chỉ hiển thị pending
+      tb.innerHTML = "";
+      
+      if (pendingOfUser.length === 0) {
+        tb.innerHTML = "<tr><td colspan='7'>Server tắt và không có lỗi chưa gửi</td></tr>";
+      } else {
+        renderPending(tb, pendingOfUser);
+      }
+    });
 }
 
 async function guiLaiPending(localId) {
@@ -2330,13 +2378,19 @@ async function guiLaiPending(localId) {
     const res = await r.json();
     if (!res.ok) throw res.error;
 
+    // Xóa lỗi đã gửi thành công
     removePending(localId);
-    alert("✅ Đã gửi lại");
+    
+    // Hiển thị thông báo
+    alert("✅ Đã gửi lại thành công");
+    
+    // Cập nhật lại bảng
     veBang();
   } catch {
     alert("⚠️ Server vẫn chưa mở");
   }
 }
+
 
 function xoaPending(localId) {
   if (!confirm("Xóa lỗi chưa gửi?")) return;
@@ -2345,8 +2399,12 @@ function xoaPending(localId) {
 }
 
 window.addEventListener("online", () => {
-  getPendingQueue().forEach(p => guiLaiPending(p.localId));
+  const pendingQueue = getPendingQueue();
+  pendingQueue.forEach(p => {
+    guiLaiPending(p.localId);  // Gửi lại lỗi chưa gửi
+  });
 });
+
 
 function saveNewPassword() {
     fetch("/api/change-password-first", {
@@ -2957,14 +3015,47 @@ sel.innerHTML = vp.map(v => `<option>${v.noi_dung}</option>`).join("");
 
 
 function suaTrucTiepDB(id) {
-SUA_ID = id;
+  SUA_ID = id;
 
+  fetch(API.replace("/send", "") + "/api/one?id=" + id)
+    .then(r => r.json())
+    .then(data => {
+      if (!data || !data.id) return alert("Không tìm thấy dữ liệu");
 
-fetch(API.replace("/send", "") + "/api/one?id=" + id)
-.then(r => r.json())
-.then(data => {
-if (!data || !data.id) return alert("Không tìm thấy dữ liệu");
+      // Cập nhật thông tin sửa
+      document.getElementById("sua_ngay").value = data.ngay;
+      document.getElementById("sua_lop").value = data.lop;
+      document.getElementById("sua_ho_ten").value = data.ho_ten;
+      document.getElementById("sua_thoi_gian").value = data.thoi_gian;
+      document.getElementById("sua_loai").value = data.loai;
+      document.getElementById("sua_vi_pham").value = data.vi_pham;
+      document.getElementById("sua_mo_ta").value = data.mo_ta;
+      document.getElementById("sua_hinh_thuc").value = data.hinh_thuc;
+      document.getElementById("sua_diem_tru").value = data.diem_tru;
 
+      // Mở popup sửa lỗi
+      document.getElementById("popupSua").style.display = "flex";
+    })
+    .catch(() => {
+      alert("Không thể tải dữ liệu để sửa");
+
+      // Lưu vào hàng đợi lỗi chưa gửi
+      addPending({
+        localId: "LOCAL_" + Date.now(),
+        status: "pending",
+        nguoi: sessionStorage.getItem("GT_LOGIN_USER"),
+        ngay: document.getElementById("sua_ngay").value,
+        lop: document.getElementById("sua_lop").value,
+        ho_ten: document.getElementById("sua_ho_ten").value,
+        thoi_gian: document.getElementById("sua_thoi_gian").value,
+        loai: document.getElementById("sua_loai").value,
+        vi_pham: document.getElementById("sua_vi_pham").value,
+        mo_ta: document.getElementById("sua_mo_ta").value,
+        hinh_thuc: document.getElementById("sua_hinh_thuc").value,
+        diem_tru: document.getElementById("sua_diem_tru").value
+      });
+    });
+}
 
 capNhatKhoiSua();
 capNhatKhungGioSua();
