@@ -2,3168 +2,1195 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Giám thị – Nhập & Theo dõi lỗi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hệ thống Chấm Thi Vovinam</title>
 
 <style>
-body { font-family: Arial; background:#f4f6f8; padding:10px; }
-h2 { text-align:center; color:#1565c0; }
-.tabs { display:flex; background:#1565c0; border-radius:4px; overflow:hidden; }
-.tab { flex:1; padding:10px; color:white; text-align:center; cursor:pointer; }
-.tab.active { background:#0d47a1; }
-.page { display:none; background:white; padding:12px; margin-top:8px; border-radius:6px; }
-.page.active { display:block; }
-
-label { font-weight:bold; margin-top:8px; display:block; }
-input, select, textarea { width:100%; padding:7px; margin-top:3px; }
-
-button { margin-top:8px; padding:8px; width:100%; background:#1565c0; color:white; border:none; }
-
-.status {
-  margin-top: 10px;
-  padding: 8px;
-  text-align: center;
-  font-weight: bold;
-  border-radius: 4px;
-}
-.status.ok   { background:#d4edda; color:#155724; }
-.status.err  { background:#f8d7da; color:#721c24; }
-.status.wait { background:#fff3cd; color:#856404; }
-
-table { width:100%; border-collapse:collapse; font-size:14px; }
-th, td { border:1px solid #ccc; padding:6px; }
-th { background:#e3f2fd; }
-
-.sent { color:green; font-weight:bold; }
-.pending { color:red; font-weight:bold; }
-
-.action button {
-  width:auto;
-  margin:2px;
-  padding:4px 6px;
-  font-size:13px;
-}
-.action .btn {
-  width: auto;
-  margin: 2px;
-  padding: 4px 8px;
-  font-size: 13px;
-  border-radius: 4px;
-  cursor: pointer;
+body{
+    margin:0;
+    font-family:Segoe UI;
+    background:#f4f6f9;
 }
 
-.action .edit {
-  background: #1976d2;
+header{
+    background:#0d6efd;
+    color:white;
+    padding:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
 }
 
-.action .resend {
-  background: #f9a825;
-  color: #000;
+.container{
+    padding:20px;
 }
 
-.action .delete {
-  background: #d32f2f;
-}
-/* ====== TO MAU THEO MUC DO VI PHAM ====== */
-tr.muc-2 {
-  background-color: #fffda1; /* vàng nhạt */
-}
-
-tr.muc-3 {
-  background-color: #ffcbcf; /* đỏ nhạt */
+.card{
+    background:white;
+    padding:25px;
+    border-radius:10px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.08);
 }
 
-#viewer {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.8);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
+button{
+    padding:8px 15px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
 }
 
-#viewer img {
-  max-width: 90%;
-  max-height: 90%;
-  background: white;
-  border-radius: 8px;
+.btn-primary{background:#0d6efd;color:white;}
+.btn-danger{background:#dc3545;color:white;}
+.btn-success{background:#198754;color:white;}
+.btn-warning{background:#ffc107;color:black;}
+
+.tabs button{
+    margin-right:10px;
+    background:#e9ecef;
 }
 
-.img-preview {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  cursor: pointer;
-}
-.anh-mini {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 6px;
-  margin: 2px;
-  cursor: pointer;
-  border: 1px solid #ccc;
+.tab-content{
+    display:none;
+    margin-top:20px;
 }
 
-.anh-mini:hover {
-  border-color: #1976d2;
+.tab-active{
+    display:block;
 }
 
-.filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
+input, select{
+    padding:6px;
+    margin:5px 0 15px 0;
+    width:100%;
 }
 
-.filter-bar select,
-.filter-bar input {
-  flex: 1;
-  min-width: 130px;
-  padding: 6px;
-  font-size: 13px;
+table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
 }
 
+table th, table td{
+    border:1px solid #ddd;
+    padding:6px;
+    text-align:center;
+}
+
+.login-box{
+    width:350px;
+    margin:120px auto;   /* căn giữa ngang */
+    text-align:center;
+}
+
+.login-box a:hover{
+    text-decoration:underline;
+}
+
+.success{color:green;font-weight:bold;}
+
+.table-wrapper{
+    height: 500px;   /* giảm xuống thấp */
+    overflow-y: auto;
+}
+
+#scoreTable thead th{
+    position: sticky;
+    top: 0;
+    background: #0d6efd;
+    color: white;
+    z-index: 3;
+}
 </style>
 </head>
 
 <body>
 
-  <div id="loginBox"
-     style="position:fixed;inset:0;
-            background:#f4f6f8;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            z-index:99999">
+<!-- ================= LOGIN ================= -->
+<div id="loginPage" class="login-box card">
+    <h2>HỆ THỐNG CHẤM THI VOVINAM</h2>
 
-  <div style="background:white;
-              padding:20px;
-              width:90%;
-              max-width:360px;
-              border-radius:8px">
-
-    <h3 style="text-align:center;color:#1565c0">
-      🔐 ĐĂNG NHẬP GIÁM THỊ
-    </h3>
-
-    <label>Người xử lý</label>
-    <select id="login_user"></select>
-
+    <label>Chọn Giám khảo</label>
+    <select id="loginJudge">
+        <option value="">-- Chọn --</option>
+        <option>Admin</option>
+        <option>Nguyễn Trường Định</option>
+        <option>Bùi Tuấn Đạt</option>
+        <option>Vũ Đình Đồng</option>
+        <option>Nguyễn Hữu Dũng</option>
+        <option>Hồ Quang Hòa</option>
+        <option>Trần Văn Hiến</option>
+        <option>Hoàng Việt Hùng</option>
+        <option>Kiều Văn Hùng</option>        
+        <option>Bùi Đức Thao</option>
+        <option>Đặng Thị Thảo</option>
+        <option>Trịnh Thị Thu Thảo</option>
+        <option>Lê Nhật Long</option>
+        <option>Hoàng Duy Nam</option>
+        <option>Nguyễn Danh Phú</option>
+        <option>Nghiêm Xuân Quang</option>
+        <option>Phạm Minh Tấn</option>
+        <option>Trần Cao Trọng</option>
+        <option>Nguyễn Viết Vĩnh</option>
+    </select>
     <label>Mật khẩu</label>
-    <input type="password" id="login_pass">
+    <input type="password" id="loginPassword" placeholder="123456">
 
-    <button onclick="dangNhap()">Đăng nhập</button>
+    <button class="btn-primary" onclick="login()">ĐĂNG NHẬP</button>
 
-    <div id="login_err"
-         style="color:red;text-align:center;margin-top:8px">
+    <div style="margin-top:15px;">
+        <a href="#" onclick="resetPassword()">Quên mật khẩu?</a>
     </div>
-    <div style="text-align:center; margin-top:8px;">
-      <a href="#" onclick="quenMatKhau(); return false;"
-        style="font-size:13px; color:#1565c0;">
-        ❓ Quên mật khẩu
-      </a>
+</div>
+<!-- ================= DASHBOARD ================= -->
+<div id="dashboard" style="display:none;">
+
+<header>
+    <div>
+        <strong>HỆ THỐNG CHẤM THI VOVINAM</strong><br>
+        giamthiwellspring.site
     </div>
-  </div>
-</div>
+    <div>
+        <span id="judgeName"></span>
+        <button class="btn-danger" onclick="logout()">Đăng xuất</button>
+    </div>
+</header>
 
-<h2>📋 GIÁM THỊ – GHI NHẬN LỖI</h2>
+<div class="container">
 
-<div class="tabs">
-  <div class="tab active" onclick="openTab(0)">📤 Gửi lỗi</div>
-  <div class="tab" onclick="openTab(1)">📜 Lịch sử của tôi</div>
-  <div class="tab" onclick="openTab(2)">📊 Toàn bộ lỗi</div>
-</div>
-<div id="viewer" onclick="this.style.display='none'">
-  <img id="viewerImg">
-</div>
+    <div class="tabs">
+        <button onclick="openTab('setup')">Thiết lập</button>
+        <button onclick="openTab('score')">Phiếu điểm</button>
+        <button onclick="openTab('history')">Lịch sử</button>
+        <button onclick="openTab('print')">PHIẾU ĐIỂM IN</button>
+    </div>
 
+    <!-- TAB 1 -->
+    <div id="setup" class="tab-content tab-active card">
+        <h3>Chọn khóa thi</h3>
 
-<!-- IMAGE PREVIEW OVERLAY -->
-<div id="imgViewer" onclick="dongAnh()"
-     style="display:none;
-            position:fixed;
-            top:0;left:0;right:0;bottom:0;
-            background:rgba(0,0,0,0.9);
-            z-index:9999;
-            align-items:center;
-            justify-content:center;">
-  <img id="imgViewerImg"
-      crossorigin="anonymous"
-      style="max-width:95%; max-height:95%; border-radius:6px;">
-</div>
+        <label>Chọn khóa thi</label>
+        <select id="examSelect">
+        </select>
+        <button class="btn-primary" onclick="confirmExam()">XÁC NHẬN</button>
+        <div id="welcomeBox" class="success"></div>
+    </div>
 
+    <!-- TAB 2 -->
+    <div id="score" class="tab-content card">
+        <h3>Phiếu điểm</h3>
 
-<!-- TAB 1 -->
-<div class="page active">
+        <label>Chọn cấp đai</label>
+        <select id="beltSelect">
+            <option>Lam đai I</option>
+            <option>Lam đai II</option>
+            <option>Lam đai III</option>
+        </select>
 
-<label>Ngày *</label>
-<input type="date" id="ngay">
-<div id="ngay_hienthi"
-     style="margin-top:4px;font-weight:bold;color:#1565c0">
-</div>
+        <div class="table-wrapper">
+        <table id="scoreTable">
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Họ tên</th>
+                    <th>Năm sinh</th>
+                    <th>Đơn vị</th>
+                    <th>Lý thuyết</th>
+                    <th>Đòn căn bản</th>
+                    <th>Chiến lược</th>
+                    <th>Khóa gỡ</th>
+                    <th>Giao đấu</th>
+                    <th>Võ lực</th>
+                    <th>Tổng điểm</th>
+                    <th>Hạng</th>
+                    <th>Kết quả</th>                 
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        </div>
+        <h4>Xác nhận & Ký tên</h4>
 
-<label>Khối *</label>
-<select id="khoi">
-  <option value="">-- Chọn khối --</option>
-  <option value="THCS">THCS</option>
-  <option value="THPT">THPT</option>
-</select>
+        <label>Họ tên Giám khảo</label>
+        <input type="text" id="signatureName" placeholder="Nhập họ tên ký xác nhận">
 
-<label>Lớp *</label>
-<select id="lop"></select>
+        <label>Chọn chế độ ký</label>
+        <select id="signatureMode" onchange="switchSignatureMode()">
+            <option value="draw">Vẽ trực tiếp</option>
+            <option value="upload">Tải ảnh chữ ký</option>
+        </select>
 
-<label>Học sinh *</label>
-<select id="ho_ten"></select>
+        <!-- VẼ -->
+        <div id="drawArea">
+            <canvas id="signatureCanvas" width="400" height="150"
+                style="border:1px solid #ccc; background:white;"></canvas>
+            <br>
+            <button type="button" class="btn-warning" onclick="clearCanvas()">Xóa</button>
+        </div>
 
-<label>Thời gian</label>
-<select id="thoi_gian">
-  <option value="">-- Chọn thời gian --</option>
+        <!-- UPLOAD -->
+        <div id="uploadArea" style="display:none;">
+            <input type="file" id="signatureUpload" accept="image/*">
+            <div id="previewBox"></div>
+        </div>
 
-  <option>Đầu giờ sáng (07:00 - 08:00)</option>
-  <option>Tiết 1+2</option>
-  <option>Giờ ra chơi tiết 1+2</option>
-  <option>Tiết 3+4 </option>
-  <option>Giờ ra chơi tiết 3+4</option>
-  <option>Tiết 5+6</option>
-  <option>Giờ nghỉ ăn trưa</option>
-  <option>Tiết 7+8</option>
-  <option>Giờ ra chơi tiết 7+8</option>
-  <option>Tiết 9+10</option>
-  <option>Quà chiều</option>
-  <option>Giờ chủ nhiệm/Phụ đạo</option>
-  <option>Giờ ra về (16:05 - 16:30)</option>
-</select>
+        <br>
+        <button class="btn-success" onclick="submitScore()">Gửi điểm</button>
+    </div>
 
-<label>Loại</label>
-<select id="loai"></select>
+    <!-- TAB 3 -->
+    <div id="history" class="tab-content card">
+    <h3>Lịch sử gửi điểm</h3>
 
-<label>Vi phạm *</label>
-<select id="vi_pham"></select>
+    <div style="display:flex; gap:10px; align-items:center; margin:10px 0;">
+        <button class="btn-primary" onclick="renderHistory()">Tải lại</button>
+        <button class="btn-warning" onclick="clearHistory()">Xóa lịch sử máy này</button>
+        <span id="historyStatus" style="opacity:.7;"></span>
+    </div>
 
-<label>Mức độ</label>
-<input id="cap_do" readonly>
+    <div class="table-wrapper" style="height:420px;">
+        <table id="historyTable">
+        <thead>
+        <tr>
+            <th>Thời gian gửi</th>
+            <th>Phiếu điểm cấp đai đã chấm</th>
+            <th>Trạng thái gửi</th>
+            <th>Xóa</th>
+        </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+        </table>
+    </div>
+    </div>
+     <!-- TAB 4 -->   
+    <div id="print" class="tab-content card">
+    <h3>PHIẾU ĐIỂM IN</h3>
 
-<label>Mô tả</label>
-<textarea id="mo_ta"></textarea>
+    <div style="display:flex; gap:10px; align-items:center; margin:10px 0;">
+        <button class="btn-primary" onclick="loadPrintPdf()">Tải phiếu điểm</button>
+        <a id="pdfOpenLink" target="_blank" style="text-decoration:none;"></a>
+        <span id="printHint" style="opacity:.7;"></span>
+    </div>
 
-<label>Số lần vi phạm</label>
-<input id="so_lan" readonly style="background:#f0f0f0; font-weight:bold;">
-
-<label>Hình thức</label>
-<select id="hinh_thuc">
-  <option>Nhắc nhở + trừ điểm thi đua</option>
-  <option>Phê bình + trừ điểm thi đua + HS và PHHS ký cam kết không tái phạm</option>
-  <option>Trừ điểm - Viết kiểm điểm + viết thư gửi PHHS - Mời PHHS - Tham gia ctrinh phục hồi tích cực và bồi thường (nếu có)</option>
-  <option>Khác</option>
-</select>
-
-<label>Điểm trừ thi đua</label>
-<select id="diem_tru">
-  <option value="1">1</option>
-  <option value="5">5</option>
-  <option value="10">10</option>
-  <option value="15">15</option>
-</select>
-<label>Người xử lý</label>
-<div id="nguoi_hienthi"
-     style="
-       padding:8px;
-       background:#e3f2fd;
-       border:1px solid #90caf9;
-       border-radius:4px;
-       font-weight:bold;
-       color:#0d47a1;
-     ">
-  ⏳ Chưa đăng nhập
-</div>
-
-<label>Ảnh minh chứng</label>
-
-<div style="display:flex; gap:8px; margin-bottom:6px;">
-  <button type="button"
-          onclick="moChonAnh()"
-          style="flex:1; background:#607d8b;">
-    📁 Up ảnh
-  </button>
-
-  <button type="button"
-          onclick="moChupAnh()"
-          style="flex:1; background:#2e7d32;">
-    📷 Chụp ảnh
-  </button>
-</div>
-
-<!-- input ẨN -->
-<input type="file"
-       id="anh_chon"
-       name="anh[]"
-       accept="image/*"
-       multiple
-       style="display:none">
-
-<input type="file"
-       id="anh_chup"
-       name="anh[]"
-       accept="image/*"
-       multiple
-       capture="environment"
-       style="display:none">
-
-
-
-<div id="preview_anh" style="margin-top:6px;"></div>
-
-
-<button type="button"
-        onclick="gui()"
-        style="
-          margin-top:15px;
-          background:#1565c0;
-          font-size:16px;
-          font-weight:bold;
-        ">
-  📤 Gửi lỗi
-</button>
-
-<div id="status" class="status" style="display:block;"></div>
-</div>
-
-<!-- TAB 2 -->
-<div class="page">
-
-<table>
-<thead>
-<tr>
-  <th>Ngày</th><th>Lớp</th><th>HS</th><th>Vi phạm</th>
-  <th>Thời gian</th><th>Trạng thái</th><th>Thao tác</th>
-</tr>
-</thead>
-<tbody id="lichsu"></tbody>
-</table>
-
-</div>
-<!-- TAB 3 -->
-<div class="page">
-<!-- ===== BỘ LỌC GỌN ===== -->
-<div class="filter-bar">
-  <select id="f_ngay">
-    <option value="">Tất cả ngày</option>
-  </select>
-
-  <select id="f_lop">
-    <option value="">Tất cả lớp</option>
-  </select>
-
-  <select id="f_vipham">
-    <option value="">Tất cả vi phạm</option>
-  </select>
-
-  <select id="f_nguoi">
-    <option value="">Tất cả người xử lý</option>
-  </select>
-
-  <input id="f_hocsinh" placeholder="🔍 Tìm học sinh">
-</div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Ngày</th>
-        <th>Lớp</th>
-        <th>Học sinh</th>
-        <th>Thời gian</th>
-        <th>Loại</th>
-        <th>Vi phạm</th>
-        <th>Mô tả</th>        
-        <th>Mức độ</th>
-        <th>Số lần</th>
-        <th>Điểm trừ</th>
-        <th>Người xử lý</th>
-        <th>Ảnh</th>
-      </tr>
-    </thead>
-    <tbody id="all_loi"></tbody>
-  </table>
+    <iframe
+        id="pdfFrame"
+        style="width:100%; height:75vh; border:1px solid #ddd; border-radius:8px; background:white;"
+    ></iframe>
+    </div>
 </div>
 
 <script>
-const QUY_DINH_RAW = `
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Đi học muộn, vào lớp muộn từ 5 phút trở lên, tự ý ra khỏi lớp không có lý do chính đáng.| 1
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Ra về trước thời gian quy định mà chưa được sự đồng ý của Giáo viên chủ nhiệm/Ban giám hiệu| 1
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Không thông báo nghỉ học đúng quy định / sai hình thức (tin nhắn cá nhân, không email chính thức)| 1
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|“Cố tình tham gia sai nhóm hoặc hoạt động khác với nội dung, câu lạc bộ, Passion Hour đã đăng ký; hoặc không tham gia các hoạt động Passion Hour, học tập, ngoại khóa bắt buộc theo quy định của nhà trường.”| 1
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Quên sách vở, đồ dùng học tập.| 1
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Làm việc riêng trong giờ học,| 1
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Không đến nơi tập trung xe buýt đúng giờ khi ra về.| 1
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Ăn vặt trong giờ học.| 1
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Vứt rác bừa bãi trong lớp học.| 1
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Bỏ tiết, trốn học không xin phép, vắng học không phép 01 buổi.| 1
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Các hành vi vi phạm, hoặc tương tự có ảnh hưởng tới bản thân HS được coi là không phù hợp| 1
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Từ chối hoặc né tránh làm các bài kiểm tra, bài thi.| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Tự ý ra ngoài khuôn viên trường học trong thời gian học tập quy định mà chưa được sự đồng ý của Giáo viên chủ nhiệm/Ban giám hiệu| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Kích động bạn bè bỏ tiết, nghỉ học tập thể.| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Giả mạo giấy tờ, giả mạo thông tin y tế, giấy phép vắng mặt.| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Bao che, giúp đỡ bạn bè bỏ tiết, trốn học hoặc không tham gia CLB, Passion Hour, hoặc các hoạt động bắt buộc khác| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Không thực hiện nhiệm vụ học tập trong lớp: không ghi bài, làm bài, không tham gia hoạt động học tập cá nhân/nhóm,...| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Không thực hiện nhiệm vụ học tập được giao ngoài giờ học: không chuẩn bị bài, thiếu/không làm bài tập về nhà...| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Mất trật tự, làm ồn, nói to, nói tự do, trêu chọc bạn bè, cười đùa trong giờ.| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Phá rối lớp học hoặc lôi kéo người khác phá rối lớp học| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Phá hoại bài làm, sản phẩm học tập của bạn (xé bài, xoá file, làm hỏng sản phẩm học tập…)| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Trích dẫn nguồn tài liệu tham khảo không đúng hoặc không ghi nguồn (đạo văn)| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Gian lận trong kiểm tra, thi cử, bao gồm nhưng không giới hạn ở các hành vi sau: xem bài, chép bài bạn, nhắc bài bạn, sử dụng tài liệu, thiết bị điện tử vào phòng thi khi không được phép, làm rò rỉ đề, lan truyền các thông tin đề bài khi chưa được phép…| 2
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Bỏ học, trốn học có tổ chức, giả mạo lý do nghỉ học.| 3
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Giao dịch, buôn bán đề bài, bài giải, kết quả thi| 3
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Làm giả giấy tờ học thuật (học bạ, bảng điểm, chứng chỉ, hồ sơ du học…| 3
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Các hành vi vi phạm tương tự khác được ghi rõ nội dung vi phạm khi xử lý- Giao dịch, buôn bán đề bài, bài giải, kết quả thi một cách có tổ chức, vì lợi ích vật chất.| 3
-NỀ NẾP – HỌC TẬP – KIỂM TRA – ĐÁNH GIÁ|Các hành vi vi phạm tương tự khác có ảnh hưởng tiêu cực trong phạm vi nhà trường được coi là không phù hợp| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Cố ý không nộp điện thoại hoặc thiết bị điện tử cho GVCN, GT vào đầu ngày học| 1
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Sử dụng điện thoại hoặc thiết bị điện tử khi không được phép hoặc sử dụng không đúng mục đích được cho phép| 1
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Phát âm thanh lớn từ thiết bị gây ồn trong lớp học/thư viện| 1
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Các hành vi vi phạm, hoặc tương tự có ảnh hưởng tới bản thân HS được coi là không phù hợp| 1
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Truy cập, xem hoặc phát tán các trang mạng, ấn phẩm, hình ảnh có nội dung không lành mạnh| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Sử dụng điện thoại để quay/chụp giáo viên, bạn bè mà không được phép| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Không tắt các thiết bị điện, nước và thiết bị chức năng sau giờ học.| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Tự ý di chuyển bàn ghế, trang thiết bị, đồ dùng dạy học khi chưa có sự cho phép của GV.| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Vô tình làm hư hại, hỏng các bàn ghế, trang thiết bị, đồ dùng dạy học, tài sản tập thể hoặc tài sản của nhà trường| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Tự ý sử dụng hoặc lấy tài sản của người khác khi chưa được cho phép.| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Làm hỏng bàn ghế, trang thiết bị do bất cẩn.| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Tự ý sử dụng hoặc lấy tài sản của người khác khi chưa được cho phép| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Không mang đồ ăn, đồ uống không đúng khu vực quy định| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Không báo cáo sự cố hư hại tài sản khi làm hỏng| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Đăng tải, chia sẻ nội dung không phù hợp, xúc phạm người khác.| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Sử dụng thiết bị để quay/lưu trữ/phát tán nội dung đồi trụy, bạo lực, hoặc có yếu tố xâm hại| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Gây phiền nhiễu đến người khác trên không gian mạng thông qua cuộc gọi, tin nhắn, chia sẻ thông tin…| 2
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Lập trang/ nhóm mạng xã hội sử dụng tên hoặc hình ảnh trường mà không có sự cho phép| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Đăng tải các hình ảnh, ngôn từ không văn minh/ vi phạm pháp luật, đưa ra các ý kiến tiêu cực, cực đoan trên mạng xã hội hoặc trong các sự kiện cộng đồng (trong hoặc ngoài trường), gây ảnh hưởng đến hình ảnh của trường hoặc học sinh của trường với tư cách HS của trường| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Xâm nhập hệ thống quản trị dữ liệu nhà trường (điểm, thông tin cá nhân...)| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Nghịch phá, sử dụng các thiết bị phòng cháy chữa cháy không đúng cách, không đúng thời điểm cần thiết| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Cố tình làm hư hại, hỏng các bàn ghế, trang thiết bị, đồ dùng dạy học, tài sản tập thể hoặc tài sản của nhà trường.| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Tự ý xâm nhập, mở kho, phòng chức năng hoặc khu vực lưu trữ thiết bị mà không có sự cho phép.| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Trộm cắp hoặc chiếm giữ tài sản tập thể hoặc tài sản của nhà trường với mục đích cá nhân hoặc hành vi phá hoại mang tính tổ chức, có kế hoạch và phân công.| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Lôi kéo, xúi giục người khác thực hiện hoặc cùng thực hiện hành vi gây hư hỏng, mất mát tài sản.| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Cố ý lập các mạng xã hội mạo danh cộng đồng WISers, Nhà trường với mục đích tuyên truyền, cổ súy các giá trị không văn minh, không tích cực hoặc mang tính nói xấu, nói sai sự thật về cá nhân hoặc tập thể WISer dưới tư cách tập thể, gây ảnh hưởng nghiêm trọng đến danh dự, nhân phẩm của người khác| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Tạo, phát tán clip có tính chất làm nhục người khác (cyberbullying, clip bạo lực học đường...)| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Phát tán phần mềm độc hại, virus hoặc tấn công hệ thống công nghệ nhà trường; cố ý làm gián đoạn hệ thống mạng của trường hoặc vi phạm bản quyền qua hệ thống của trường| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Cố tình vi phạm nhiều lần (từ 03 lần trở lên) sau khi vi phạm ở mức độ 1 hoặc 2.| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Gây cháy nổ, hư hỏng hệ thống điện, nước hoặc phòng học| 3
-TÀI SẢN - THIẾT BỊ ĐIỆN TỬ – CÔNG NGHỆ THÔNG TIN – KHÔNG GIAN HỌC ĐƯỜNG|Các hành vi vi phạm tương tự khác có ảnh hưởng tiêu cực trong phạm vi nhà trường được coi là không phù hợp| 3
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Ăn, uống đồ ăn mang từ bên ngoài vào trường khi chưa được sự đồng ý và cho phép của phòng y tế.| 1
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Chạy nhảy, xô đẩy trong lớp học, hành lang, cầu thang gây nguy cơ tai nạn.| 1
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Ném đồ vật, chơi bóng trong lớp học hoặc nơi công cộng gây nguy cơ tai nạn.| 1
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Gây gổ, chọc tức, giận và đùa nghịch quá mức.| 1
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Không vào trường ngay khi xuống xe bus, hoặc tự ý ra ngoài khuôn viên trường trước khi lên xe bus ra về| 1
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Không hợp tác hoặc né tránh hòa giải/điều tra sự vụ| 1
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Các hành vi vi phạm, hoặc tương tự có ảnh hưởng tới bản thân HS được coi là không phù hợp| 1
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Lắp đặt, cài đặt thiết bị lạ (camera mini, thiết bị điện tử nguy hiểm…) tại khu vực công cộng| 2
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Đưa người lạ (người ngoài trường) vào trường mà không xin phép| 2
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Quấy rối: Sử dụng lặp đi lặp lại lời nói, hành vi không nhằm mục đích đúng đắn nhắm đến một người hoặc một nhóm người, gây tổn thương về tâm lý và cảm xúc;| 2
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Quấy rối tình dục: Có lời nói, hành vi khêu gợi, bình phẩm khiếm nhã về xu hướng, hành vi tình dục của người khác, bình phẩm về cơ thể người khác theo hướng tình dục hóa; cố ý nhắc đến, gửi cho người khác các văn hóa phẩm khiêu dâm; tiếp xúc thể xác không tự nguyện và một số hành vi tương tự.| 2
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Xâm hại cơ thể người khác.| 2
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Cố ý làm lộ phần cơ thể nhạy cảm của bản thân hoặc người khác tại nơi công cộng| 2
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Sử dụng bạo lực hoặc đe dọa sử dụng bạo lực, Gây gổ đánh nhau, tổ chức hoặc tham gia tổ chức đánh nhau| 2
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Có những lời nói, hành vi, ngôn ngữ, cử chỉ phân biệt đối xử dựa trên chủng tộc, vùng miền, giới tính, xu hướng tính dục...| 2
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Bắt nạt người khác về tinh thần, bao gồm nhưng không giới hạn ở các hành vi: xa lánh, tẩy chay, làm nhục, tấn công hoặc hành hạ tâm lý, quấy rối/quấy rối tình dục...| 2
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Bắt nạt người khác về thể chất, bao gồm nhưng không giới hạn ở các hành vi: ảnh hưởng về mặt vật chất, gây thương tích, sử dụng bạo lực, đe dọa sử dụng bạo lực...| 2
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Bắt nạt trực tiếp hoặc qua không gian mạng.| 2
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Sản xuất, buôn bán, vận chuyển, phát tán, tàng trữ, sử dụng hoặc lôi kéo người khác sử dụng vũ khí, chất cháy nổ, các chất gây nghiện, hướng thần, ma túy, các loại dược phẩm, hóa chất cấm sử dụng; các tài liệu, ấn phẩm, thông tin phản động, đồi trụy và các tài liệu cấm khác theo quy định của Nhà nước.| 3
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Tổ chức đánh bài, các hoạt động vui chơi, giải trí có cá cược bằng tiền mặt hay hiện vật.| 3
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Vi phạm luật an toàn giao thông: sử dụng phương tiện giao thông không đúng quy định (lái xe máy trên 50cc), không đội mũ bảo hiểm khi tham gia giao thông, chở quá số người quy định...| 3
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Lấy trộm tài sản có giá trị lớn (từ 2.000.000 VND trở lên) của cá nhân hoặc nhà trường, hoặc phá hoại tài sản của cá nhân hay tập thể trong trường gây hậu quả nghiêm trọng ảnh hưởng đến toàn trường.| 3
-BẠO LỰC HỌC ĐƯỜNG – VI PHẠM PHÁP LUẬT|Các hành vi vi phạm tương tự khác có ảnh hưởng tiêu cực trong phạm vi nhà trường được coi là không phù hợp| 3
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Mặc sai đồng phục, đi dép lê, đầu tóc không gọn gàng.| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Tự ý thay đổi mẫu mã, kiểu dáng, kích thước đồng phục| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Trang điểm, nhuộm tóc, để móng tay quá dài và có biểu hiện nổi bật.| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Để các kiểu tóc không thông thường hoặc che khuất tầm nhìn| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Lộ hình xăm, đeo trang sức, phụ kiện tại các vị trí đặc biệt như môi, mũi...| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Mặc trang phục làm lộ các phần cơ thể riêng tư, ví dụ như: áo hai dây. áo có cổ khoét sâu, áo hở rốn, quần/chân váy ngắn trên gối 5 cm, áo/quần bó sát, áo/quần rách làm lộ cơ thể, áo/quần tua rua.| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Không giữ gìn vệ sinh/ gọn gàng ở khu vực cá nhân, khu vực chung. Vứt rác bừa bãi nơi công cộng;| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Không dọn dẹp bàn ăn, không cất khay ăn, không xếp ghế sau khi ăn| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Không xếp hàng hoặc chen hàng khi tham hoạt động| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Cố ý lãng phí đồ ăn, đồ uống trong trường| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Ngồi/ nằm lên bàn học/ tủ locker| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Không chào hỏi, xin lỗi, sử dụng ngôn ngữ và ứng xử thiếu lịch sự,| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Các hành vi vi phạm, hoặc tương tự có ảnh hưởng tới bản thân HS được coi là không phù hợp| 1
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Trang điểm đậm, nhuộm tóc, đeo phụ kiện không phù hợp.| 2
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Sử dụng trang sức, phụ kiện có hình thù phản cảm, không phù hợp môi trường học đường| 2
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Hành vi thiếu nghiêm túc, xúc phạm, gây ảnh hưởng đến hoạt động công cộng khi tham gia với tư cách HS trường| 2
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Hành vi thiếu nghiêm túc, xúc phạm, gây ảnh hưởng đến hoạt động lễ nghi, nghi thức tập thể của trường (lễ chào cờ, sự kiện...)| 2
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Có hành động thể hiện tình cảm không đúng mực trong phạm vi trường học: ôm, hôn, đắp chung chăn, tiếp xúc thân thể thân mật.| 2
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Nói tục, chửi bậy| 2
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Có thái độ, hành động chống đối yêu cầu thực hiện kỷ luật| 2
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Cố tình nói dối hoặc đưa ra lý do bao biện không đúng sự thật để tránh trách nhiệm| 2
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Có những hành động trêu chọc, gây phiền nhiễu đến thầy cô, bạn bè hoặc người khác trong trường: vẽ vào sách bạn, đổ nước vào bạn...| 2
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Đùa giỡn bằng lời nói thái quá hoặc không phù hợp với môi trường học đường (gọi hoặc ám chỉ biệt danh, tên bố mẹ, ...)| 2
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Có hành động, biểu cảm, thái độ tiêu cực, phản cảm khi mặc đồng phục nhà trường.| 2
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Đăng tải hình ảnh chứa hành động, biểu cảm, thái độ tiêu cực, phản cảm khi mặc đồng phục nhà trường.| 3
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Mặc trang phục chứa các hình ảnh, từ ngữ, thông điệp phản cảm, đồi trụy hoặc mang tính phân biệt đối xử (phân biệt chủng tộc, giới tính, vùng miền...), xúc phạm, hạ thấp người khác.| 3
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Đưa ra thông tin, ý kiến, bình luận về đời tư của người khác gây ảnh hưởng đến tâm lý, uy tín, danh dự của người khác| 3
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Chia sẻ, phát tán các tin tức không đúng sự thật (tin đồn, tin nặc danh …) hoặc thông tin chưa được kiểm chứng gây ảnh hưởng đến tâm lý, uy tín và danh dự người khác| 3
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Các hành vi vi phạm tương tự khác được ghi rõ nội dung vi phạm khi xử lý Kích động, rủ rê tập thể vi phạm quy định trang phục.| 3
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Có hành vi xúc phạm nhân phẩm, danh dự của GV, cán bộ, NV, HS và người khác trong nhà trường| 3
-TRANG PHỤC – DIỆN MẠO – TÁC PHONG – THÁI ĐỘ|Các hành vi vi phạm tương tự khác có ảnh hưởng tiêu cực trong phạm vi nhà trường được coi là không phù hợp| 3
-`.trim();
-/* ====== DANH SÁCH LỚP -> HỌC SINH (FULL) ====== */
-/* ====== DANH SÁCH LỚP – HỌC SINH (RAW) ====== */
-const DS_LOP_RAW = `
-6AB1 Trần Phương Anh
-6AB1 Dương Quốc Bình
-6AB1 Phạm Ngọc Minh Châu
-6AB1 Lê Minh Hà
-6AB1 Mai Thanh Hà
-6AB1 Chử Ngọc Minh Khanh
-6AB1 Hoàng Mạnh Tùng Lâm
-6AB1 Nguyễn Hà My
-6AB1 Nguyễn Ngọc Bảo Nam
-6AB1 Nguyễn Ngọc Bảo Sam
-6AB1 Ungoen Cao Uy
-6AB2 Hoàng Khánh An
-6AB2 Nguyễn Quang Anh
-6AB2 Vũ Duy Anh
-6AB2 Nguyễn Ngọc Ánh
-6AB2 Vũ Linh Chi
-6AB2 Âu Bảo Khanh
-6AB2 Phạm Hùng Kiệt
-6AB2 Trương Kim Ngân
-6AB2 Nguyễn Ngọc An Nhi
-6AB2 Nguyễn Tuấn Phong
-6AB2 Lại Văn Minh Phúc
-6AB2 Vũ Bảo Phúc
-6AB2 ZHAO QICHEN
-6AB2 Đình Phương Thảo
-6AB2 Nguyễn Phương Thảo
-6AB3 Phan Thế An
-6AB3 Bùi Minh Tuệ Anh
-6AB3 Nguyễn Nhật Anh
-6AB3 Tạ Ngọc Bảo Anh
-6AB3 Vũ Minh Anh
-6AB3 Đặng Trâm Anh
-6AB3 Nguyễn Gia Bách
-6AB3 Nguyễn Thanh Bình
-6AB3 Hoàng Ngọc Minh Châu
-6AB3 Lý Quỳnh Chi
-6AB3 Phạm Hoàng Dũng
-6AB3 Bùi Thanh Hằng
-6AB3 Nguyễn Tuấn Hùng
-6AB3 Trần Minh Khôi
-6AB3 Lê Đoàn Trà My
-6AB3 Đỗ Nguyễn An Nhiên
-6AB3 Đàm Minh Phương
-6AB3 Trương Tiến Thụ
-6AB3 Nguyễn Bùi Bảo Trang
-6AB3 Nguyễn Bảo Minh Trí
-6AB3 Nguyễn Quốc Vinh
-6AB4 Nguyễn Đoàn Tâm An
-6AB4 Nguyễn Phan Kiều Anh
-6AB4 Nguyễn Phương Anh
-6AB4 Phạm Mỹ Anh
-6AB4 Phương Hữu Bảo
-6AB4 Bùi Thế Dũng
-6AB4 Nguyễn Trần Thùy Dương
-6AB4 Lê Hải Đăng
-6AB4 Nguyễn Hải Đăng
-6AB4 Lê Trần Bảo Lâm
-6AB4 Nguyễn An Lê
-6AB4 Lý Duy Bảo Minh
-6AB4 Nguyễn Tuấn Minh
-6AB4 Đặng Đức Nguyên
-6AB4 Lương Tuệ Nhi
-6AB4 Tạ Minh Phương
-6AB4 Nguyễn Ngọc Bảo Quân
-6AB4 Lê Phương Uyên
-6AB4 Nguyễn Bá Tôn Vũ
-6AB4 Tạ Yến Vy
- 
- 
-6AD Nguyễn Phúc An
-6AD Đàm Quỳnh Anh
-6AD Đào Thiên Ân
-6AD Nguyễn Gia Bảo
-6AD Trần Quốc Bảo Hà
-6AD Nguyễn Thủy Hoa
-6AD Lương Khánh Huyền
-6AD Nguyễn Ngọc Khải
-6AD Nguyễn Trung Bảo Khánh
-6AD Nguyễn Nhật Khôi
-6AD Trần Minh Khôi
-6AD Nguyễn Diệp Linh
-6AD Nguyễn Huy Quang Minh
-6AD Nguyễn Phương Bình Minh
-6AD Nguyễn Hữu Nguyên
-6AD Hoàng Hải Phong
-6AD Nguyễn Minh Sơn
-6AD Lê Kim Triều
-6AD Phạm Minh Tuệ
-6AD Nguyễn Minh Tuấn Quang
- 
-6MT Lê Mỹ An
-6MT Lê Trường An
-6MT Nguyễn Khánh An
-6MT Nguyễn Ngọc Thái An
-6MT Hoàng Bảo Anh
-6MT Nguyễn Hà Anh
-6MT Phạm Quang Anh
-6MT Trần Trung Dũng
-6MT Nguyễn Hữu Đạt
-6MT Nguyễn Anh Đức
-6MT Nguyễn Đăng Minh Hiếu
-6MT Nguyễn Quang Huy
-6MT Nguyễn Dương Bảo Khang
-6MT Đồng Trường Khánh
-6MT Đặng Gia Lạc
-6MT Nghiêm Hoàng Lan
-6MT Nguyễn Kim Lân
-6MT Hoàng Minh
-6MT Lê Hải Minh
-6MT Phùng Tuấn Minh
-6MT Trần Khôi Nguyên
-6MT Nguyễn Tuấn Phong
-6MT Anton Hải Reschwamm
-6MT Nguyễn Quỳnh Thư
- 
- 
-7AB2 Nguyễn Thành An
-7AB2 Lê Minh Anh
-7AB2 Thạch Việt Anh
-7AB2 Hoàng Gia Bảo Châu
-7AB2 Bạch Quỳnh Chi
-7AB2 Nguyễn Hương Chi
-7AB2 Nguyễn Xuân Đức
-7AB2 Nguyễn Ngọc Hà
-7AB2 Phạm Văn Hưng
-7AB2 Phạm Tuấn Kiệt
-7AB2 Dương Đức Bảo Lâm
-7AB2 Phan Tuệ Linh
-7AB2 Trần Chung Trúc Mai
-7AB2 Nguyễn Bá Ngọc Minh
-7AB2 Trần Hải Nam
-7AB2 Nguyễn Hoàng Kim Ngân
-7AB2 Nguyễn Hữu Phước
-7AB2 Đoàn Danh Nhật Quang
-7AB2 Dương Bảo Quý
-7AB2 Nguyễn Anh Thư
-7AB2 Nguyễn Hà Vi
-7AB2 Ngô Đức Phúc Vinh
-7AB2 Nguyễn Tiến Minh Vũ
- 
- 
-7AB3 Bùi Tuấn Anh
-7AB3 Đỗ Phan Anh
-7AB3 Nguyễn Quỳnh Bảo Anh
-7AB3 Triệu Thiên Ân
-7AB3 Đặng Quỳnh Dương
-7AB3 Đoàn Minh Đức
-7AB3 Phạm Gia Hiền
-7AB3 Hoàng Văn Timur Hoanovitr
-7AB3 Nguyễn Nguyên Khang
-7AB3 Đặng Nam Khánh
-7AB3 Ngô Bảo Lâm
-7AB3 Vũ Tùng Lâm
-7AB3 Nguyễn Trúc Hà Linh
-7AB3 Nguyễn Phúc Minh
-7AB3 Lê Bảo Nam
-7AB3 Phạm Nhật Nam
-7AB3 Trần Hải Nam
-7AB3 Đinh Nguyễn Khánh Ngọc
-7AB3 Vũ Tâm Như
-7AB3 Nguyễn Huy Phong
-7AB3 Đỗ Hoàng Quân
-7AB3 Nguyễn Minh Trang
-7AB3 Nguyễn Trọng Tuấn
-7AB3 Lê Uy Vũ
-7AB3 Trần Xuân Tường Vy
- 
- 
-7AB4 Đỗ Đoàn Tuấn An
-7AB4 Phạm Bảo Châu
-7AB4 Nguyễn Linh Chi
-7AB4 Đỗ Minh Đức
-7AB4 Nguyễn Minh Hằng
-7AB4 Nguyễn Danh Bảo Hiền
-7AB4 Đào Hữu Minh Huy
-7AB4 Nguyễn Tiến Khang
-7AB4 Vũ Gia Linh
-7AB4 Phạm Bảo Long
-7AB4 Phạm Khánh Long
-7AB4 Vũ Minh
-7AB4 Ngô Hà My
-7AB4 Nguyễn Ngọc Hà My
-7AB4 Phan Tiến Nam
-7AB4 Nguyễn Khánh Ngọc
-7AB4 Lê Xuân Phúc
-7AB4 Đỗ Hoàng Quyên
-7AB4 Nguyễn Như Quỳnh
-7AB4 Vũ Đức Tiến
-7AB4 Đỗ Quang Tùng
-7AB4 Lê Hiểu Vân
- 
- 
-7AD Lê Ngọc Hà An
-7AD Đỗ Kim Chi
-7AD Nguyễn Đắc Di
-7AD Ngô Thiệu Chí Đạt
-7AD Tierney Huy Eamon
-7AD Nguyễn Phạm Minh Hà
-7AD Trần Ngọc Hà
-7AD Đinh Ngọc Hân
-7AD Dương Diệu Hương
-7AD Cao Phương Linh
-7AD Trần Gia Linh
-7AD Phạm Phùng Quang Minh
-7AD Hoàng Misaki
-7AD Lê Diễm My
-7AD Chu Nguyễn Bảo Ngân
-7AD Đỗ Kim Ngân
-7AD Hoàng Nguyên Bảo Ngân
-7AD Trần Minh Ngọc
-7AD Nguyễn Xuân Phúc
-7AD Lại Lê Vân
-7AD Đoàn Ngọc Lan Ý
- 
- 
-7MT1 Nguyễn Lê Bảo Châu
-7MT1 Hoàng Hải
-7MT1 Phạm Lê Gia Hân
-7MT1 Lê Nhật Hưng
-7MT1 Nguyễn Minh Khang
-7MT1 Nguyễn Bảo Khuê
-7MT1 Đỗ Thùy Lâm
-7MT1 Nguyễn Đăng Lâm
-7MT1 Trần Phương Lâm
-7MT1 Nguyễn Hữu Mạnh
-7MT1 Đoàn Ngọc Lan Như
-7MT1 Phạm Hải Phong
-7MT1 Nguyễn Lê Hồng Phúc
-7MT1 Trần Cát Hà Phương
-7MT1 Dương Danh Thái
-7MT1 Nguyễn Xuân Anh Thái
-7MT1 Vũ Nam Thành
-7MT1 Vũ Nguyễn Phương Thảo
-7MT1 Nguyễn Ngọc Anh Thư
-7MT1 Đỗ Thị Quỳnh Trang
-7MT1 Đặng Thế Vinh
-7MT1 Trần Nhật Vy
- 
- 
-7MT2 Đặng Khánh Hảo Anh
-7MT2 Trần Bảo Anh
-7MT2 Trịnh Gia Bảo
-7MT2 Đặng Tiến Dũng
-7MT2 Phạm Nguyễn Hải Duy
-7MT2 Nguyễn Thùy Dương
-7MT2 Nguyễn Ngân Hà
-7MT2 Vương Trọng Khang
-7MT2 Trương Trung Kiệt
-7MT2 Nguyễn Thành Lâm
-7MT2 Nguyễn Thế Lâm
-7MT2 Nguyễn Thùy Lâm
-7MT2 Nguyễn Bảo Linh
-7MT2 Nguyễn Khánh Linh
-7MT2 Pedersen Leth Khuê Madeleine
-7MT2 Đào Hồng Mai
-7MT2 Đỗ Gia Minh
-7MT2 Lê Minh Ngọc
-7MT2 Đoàn Hồng Phong
-7MT2 Nguyễn Thanh Phong
-7MT2 Nguyễn Vũ Phong
-7MT2 Phạm Hải Phong
-7MT2 Phạm Nam Phong
-7MT2 Lưu Thành Tâm
- 
- 
-8AB2 Luyện Hoàng Vĩnh An
-8AB2 Lương Đức An
-8AB2 Nguyễn Khánh An
-8AB2 Nguyễn Trọng Bách
-8AB2 Nguyễn Minh Châu
-8AB2 Vũ Quốc Bảo Châu
-8AB2 Nguyễn Trung Cường
-8AB2 Nguyễn Ngọc Doanh Doanh
-8AB2 Phạm Hoàng Anh Huy
-8AB2 Phạm Minh Khôi
-8AB2 Vũ Tùng Lâm
-8AB2 Đỗ Việt Long
-8AB2 Nguyễn Đức Lợi
-8AB2 Nguyễn Bảo Minh
-8AB2 Vũ Hồng My
-8AB2 Nguyễn Ánh Nguyệt
-8AB2 Nguyễn Thị Hà Phương
-8AB2 Nguyễn Phương Thảo
-8AB2 Lý Thủy Tiên
-8AB2 Nguyễn Hữu Tùng
-8AB2 Nguyễn Tường Vi
-8AB2 Nguyễn Ngọc Anh Vũ
- 
- 
-8AB3 Lê Hoàng Minh Anh
-8AB3 Nguyễn Bùi Bảo Anh
-8AB3 Nguyễn Nhật Anh
-8AB3 Trần Hải Ngọc Châu
-8AB3 Phạm Anh Duy
-8AB3 Đỗ Tiến Đạt
-8AB3 Nguyễn Minh Khang
-8AB3 Đồng Trường Khanh
-8AB3 Lê Nam Khánh
-8AB3 Nguyễn Phạm Minh Khôi
-8AB3 Lê Nhã Kỳ
-8AB3 Lã Ngọc Long
-8AB3 Nguyễn Nhật Minh
-8AB3 Phạm Nhật Minh
-8AB3 Lu Phương Nhi
-8AB3 Bùi Hải Phong
-8AB3 Mai Anh Quân
-8AB3 Trần Ngọc Trâm
-8AB3 Bảo Ngân
-8AB3 Nguyễn Đức Vinh
-8AB3 Vũ Gia Vũ
- 
- 
-8AB4 Nguyễn Gia An
-8AB4 Phạm Minh Ánh
-8AB4 Phạm Quang Diệu
-8AB4 Phạm Thu Hà
-8AB4 Hồ Bảo Hân
-8AB4 Nguyễn Đăng Chí Hiển
-8AB4 Phan Đức Hoàng
-8AB4 Đào Huy Khánh
-8AB4 Đặng Đức Long
-8AB4 Nguyễn Kim Long
-8AB4 Tô Quang Long
-8AB4 Lê Hà My
-8AB4 Đặng Bảo Nam
-8AB4 Phạm Xuân Nam
-8AB4 Nguyễn Bảo Ngân
-8AB4 Phạm Lê An Nhiên
-8AB4 Trần Hoàng Phong
-8AB4 Trương Bá Nam Phong
-8AB4 Vũ Hồng Quân
-8AB4 Nguyễn Phương Trang
-8AB4 Nguyễn Vũ Ngọc Trâm
-8AB4 Phan Hiền Dũng Trí
-8AB4 Hoàng Nhật Vy
- 
- 
-8AB5 Lê Ngọc Trà Anh
-8AB5 Nguyễn Bá Bảo Anh
-8AB5 Nguyễn Ngọc Mỹ Anh
-8AB5 Nguyễn Phương Anh
-8AB5 Nguyễn Hữu Bách
-8AB5 Nguyễn Thái Quỳnh Bảo
-8AB5 Phạm Lê Nhật Huy
-8AB5 Ma Thụy Khanh
-8AB5 Hoàng Minh Khánh
-8AB5 Nguyễn Chí Kiên
-8AB5 Nguyễn Phan Tùng Lâm
-8AB5 Đàm Nguyễn Phương Liễu
-8AB5 Trần Nam
-8AB5 Bùi Bích Phương
-8AB5 Phạm Đăng Trí
-8AB5 Nguyễn Nam Trung
-8AB5 Hà Quang Vinh
-8AB5 Tạ Phương Vy
- 
- 
-8AB6 Hoàng Nguyệt Anh
-8AB6 Cao Vũ Hoàng Bách
-8AB6 Nguyễn Bảo Châu
-8AB6 Nguyễn Ngọc Bảo Châu
-8AB6 Đỗ Việt Dũng
-8AB6 Hồ Nam Hải
-8AB6 Nguyễn Hoàng Hải
-8AB6 Nguyễn Minh Hoàng
-8AB6 Lương Gia Khánh
-8AB6 Tạ Tài Tuấn Kiệt
-8AB6 Nguyễn Vinh Kỳ
-8AB6 Trần Phạm Phương Linh
-8AB6 Ngô Đại Minh
-8AB6 Nguyễn Quốc Bảo Nam
-8AB6 Trần Hoàng Nam
-8AB6 Nguyễn Hoàng Ngân
-8AB6 Nguyễn Khôi Nguyên
-8AB6 Nguyễn Linh Nhi
-8AB6 Trần Nam Phát
-8AB6 Ngô Bảo Phương
-8AB6 Lê Nguyễn Bảo Quân
-8AB6 Zhang Hang Rui
-8AB6 Hoàng Minh Trí
-8AB6 Nguyễn Thanh Trúc
- 
- 
-8AB7 Đỗ Linh Mỹ An
-8AB7 Đỗ Minh Anh
-8AB7 Nguyễn Ngọc Bình
-8AB7 Nguyễn Hà Chi
-8AB7 Phạm Lan Chi
-8AB7 Trương Tuấn Đức
-8AB7 Nguyễn Đỗ Gia Gia
-8AB7 Trương Bảo Hân
-8AB7 Bùi Hoàng Nam Khánh
-8AB7 Nguyễn Gia Khánh
-8AB7 Vũ Nguyễn Gia Linh
-8AB7 Nguyễn Hoàng Minh
-8AB7 Phan Nhật Minh
-8AB7 Phùng Tuệ Minh
-8AB7 Hwang SooBin
-8AB7 Phạm Bảo Vy
-8AB7 Cao Trần Như Ý
-8AB7 Hwang YooBin
- 
- 
-8AD Nguyễn Khánh An
-8AD Đoàn Bùi Bảo Anh
-8AD Nguyễn Hà Lan Anh
-8AD Nguyễn Phương Anh
-8AD Trần Minh Anh
-8AD Tạ Minh Châu
-8AD Hoàng Khánh Chi
-8AD Đỗ Hồng Hà
-8AD Trần Vân Hà
-8AD Nguyễn Minh Khang
-8AD Vũ Gia Khánh
-8AD Lê Hà Linh
-8AD Nguyễn Đoàn Chi Linh
-8AD Đỗ Gia Lộc
-8AD Ngô Thiên Minh
-8AD Trần Xuân Nguyên
-8AD Tô Ngọc Ý Như
-8AD Nguyễn An Phương
-8AD Nguyễn Hà Phương
-8AD Lê Minh Thư
-8AD Hoàng Ngọc Tú
-8AD Lê Trần Thụy Vân
-8AD Nguyễn Hà Vũ
-8AD Đỗ Hà Vy
- 
- 
-8MT1 Lê Dạ Minh Châu
-8MT1 Nguyễn Quỳnh Châu
-8MT1 Lê Quang Chính
-8MT1 Phương Minh Đức
-8MT1 Nguyễn Trần Khánh Huy
-8MT1 Đào Hữu Gia Khánh
-8MT1 Nguyễn Phúc Minh Khôi
-8MT1 Hoàng Hải Linh
-8MT1 Phạm Gia Linh
-8MT1 Nguyễn Đình Bảo Long
-8MT1 Nguyễn Đức Minh
-8MT1 Nguyễn Tuấn Minh
-8MT1 Trần Khải Ngọc
-8MT1 Nguyễn Khôi Nguyên
-8MT1 Nguyễn Minh Hải Phong
-8MT1 Trần Hải Phong
-8MT1 Trần Xuân Phúc
-8MT1 Vũ Hải Phúc
-8MT1 Trần Hoàng Bích Phương
-8MT1 Chu Hoàng Quân
-8MT1 Lê Ngọc Diệu Thảo
-8MT1 Nguyễn Minh Tiến
-8MT1 Lương Hồ Bảo Trân
-8MT1 Nguyễn Việt Tú
- 
- 
-8MT2 Bùi Quang Minh Bảo
-8MT2 Nguyễn Lâm Thiên Bảo
-8MT2 Ngô Bùi Minh Châu
-8MT2 Trần Khánh Chi
-8MT2 Nguyễn Hà Linh Đan
-8MT2 Nguyễn Anh Đức
-8MT2 Phạm Bá Minh Đức
-8MT2 Trần Nhật Đức
-8MT2 Vũ Ngân Khánh Emily
-8MT2 Nguyễn Minh Hằng
-8MT2 Dương Ngọc Bảo Hân
-8MT2 Ngô Gia Khang
-8MT2 Dương Ngân Khánh
-8MT2 Phạm Nam Khánh
-8MT2 Trương Quang Kiệt
-8MT2 Nguyễn Ngọc Thủy Linh
-8MT2 Lê Quỳnh Mi
-8MT2 Cao Điền Ngọc
-8MT2 Ngô Yến Nhi
-8MT2 Trần Nguyễn An Nhiên
-8MT2 Nguyễn Quang Thiệu Phong
-8MT2 Lê Uyên Phương
-8MT2 Nguyễn Hữu Đức Trí
-8MT2 Lê Đức Vinh
-8MT2 Tống Duy Minh Vũ
- 
- 
-9AB2 Nguyễn Minh Anh
-9AB2 Nguyễn Vũ Việt Bách
-9AB2 Trần Ngọc Bảo Châu
-9AB2 Hà Hải Đăng
-9AB2 Vũ Lê Hương Giang
-9AB2 Trần Minh Đức
-9AB2 Vũ Lê Hương Giang
-9AB2 Bùi Lam Khuê
-9AB2 Đào Nguyên Khuê
-9AB2 Nguyễn Tùng Lâm
-9AB2 Lê Hoàng Linh
-9AB2 Lê Minh
-9AB2 Vũ Nhật Tuấn Minh
-9AB2 Bùi Thảo Nguyên
-9AB2 Đỗ Tuyết Nhi
-9AB2 Nguyễn Minh Phong
-9AB2 Lý Trần Gia Phú
-9AB2 Phạm Hoàng Kim Phụng
-9AB2 Phạm Minh Quang
-9AB2 Lê Phúc Quyết
-9AB2 Nguyễn Ngọc San San
-9AB2 Hoàng Nguyễn Thái Sơn
-9AB2 Nguyễn Hà Trang
-9AB2 Lê Đức Trí
-9AB2 Nguyễn Vũ Phương Anh
-9AB2 Minh Khang
- 
- 
-9AB3 Phạm Hương Giang
-9AB3 Mai Thu Hà
-9AB3 Chu Vũ Gia Huy
-9AB3 Lê Gia Huy
-9AB3 Vũ Đức Huy
-9AB3 Bùi Hồng Minh Khanh
-9AB3 Đào Tùng Linh
-9AB3 Lê Gia Minh
-9AB3 Vũ Huyền Ngọc
-9AB3 Hoàng Phong Nhi
-9AB3 Phạm Hưng Phú
-9AB3 Nguyễn Bá Anh Quân
-9AB3 Đặng Thái Sơn
-9AB3 Lê Đức Thịnh
-9AB3 Lăng Hiền Phương Uyên
-9AB3 Phạm Bách Việt
-9AB3 Trịnh An Khánh Vy
-9AB3 Nguyễn Vũ Phương Anh
- 
- 
-9AB4 Mai Hoàng An
-9AB4 Vũ Tùng Anh
-9AB4 Đặng Thái Dương
-9AB4 Hoàng Gia Đạt
-9AB4 Trịnh Minh Đức
-9AB4 Phạm Đức Hùng
-9AB4 Đỗ Nguyên Khoa
-9AB4 Chu Nhật Minh
-9AB4 Trần Trà My
-9AB4 Vũ Lâm Nghi
-9AB4 Đỗ Hoàng Nguyên
-9AB4 Nguyễn Ngọc Thảo Nhi
-9AB4 Lê Hồng Phúc
-9AB4 Nghiêm Nhật Quang
-9AB4 Nguyễn Thế Quang
-9AB4 Nguyễn Hữu Sang
-9AB4 Phạm Khánh Thành
-9AB4 Lê Hương Thảo
-9AB4 Nguyễn Hồng Thăng
-9AB4 Nguyễn Lâm Tùng
- 
- 
-9AB5 Lương Bảo Anh
-9AB5 Phạm Nhã Ca
-9AB5 Vũ Hà Chi
-9AB5 Đỗ Đức Duy
-9AB5 Phan Bá Hiếu
-9AB5 Dương Quốc Huy
-9AB5 Lương Bảo Huy
-9AB5 Nguyễn Hoàng Huy
-9AB5 Nguyễn Tuấn Hưng
-9AB5 Bạch Đăng Khôi
-9AB5 Dương Hải Lâm
-9AB5 Vũ Tuệ Lâm
-9AB5 Hoàng Gia Linh
-9AB5 Đặng Quốc Nhật Minh
-9AB5 Dương Huyền My
-9AB5 Lê Hải Nam
-9AB5 Nguyễn Giang Nam
-9AB5 Nguyễn Khánh Ngọc
-9AB5 Lê Ngọc Quang
-9AB5 Vũ Quang
-9AB5 Lâm Đỗ Quyên
-9AB5 Nguyễn Bá Tôn Quyền
-9AB5 Nguyễn Trọng Trường
- 
- 
-9AD Đàm Tâm An
-9AD Bùi Diệp Anh
-9AD Lương Diệp Anh
-9AD Nguyễn Việt Bách
-9AD Nguyễn Elizabeth
-9AD Trần Gia Hân
-9AD Vũ Gia Hân
-9AD Nguyễn Vân Khánh
-9AD Trần Bảo Khánh
-9AD Nguyễn Ngọc Khuê
-9AD Nguyễn Xuân Kiên
-9AD Nguyễn Huyền Linh
-9AD Trần Chung Trúc Linh
-9AD Phạm Khánh An Nam
-9AD Đoàn Minh Nguyệt
-9AD Nguyễn Đăng Quang
-9AD Trần Quân
-9AD Lê Hà Linh Thư
-9AD Nguyễn Thủy Tiên
-9AD Đỗ Ngọc Trâm
-9AD Phạm Cẩm Tú
-9AD Phạm Vũ Thanh Tùng
-9AD Nguyễn Bảo Vy
- 
-9MT1 Đỗ Vân Anh
-9MT1 Nguyễn Duy Anh
-9MT1 Phạm Ngọc Bảo Anh
-9MT1 Nguyễn Gia Bách
-9MT1 Nguyễn Văn Tiến Dũng
-9MT1 Phạm Hoàng Duy
-9MT1 Phạm Linh Đan
-9MT1 Lương Vũ Hải Đường
-9MT1 Dương Minh Giang
-9MT1 Nguyễn Hoàng Gia Hân
-9MT1 Nguyễn Gia Hưng
-9MT1 Ngô Huy Gia Khánh
-9MT1 Ngô Hoàng Nam Khôi
-9MT1 Nguyễn Trọng Khôi
-9MT1 Ngô Hà Linh
-9MT1 Hoàng Minh
-9MT1 Nguyễn Sinh Nhật Minh
-9MT1 Nguyễn Thế Minh
-9MT1 Quản Viên Phương
-9MT1 Tô Hà Phương
-9MT1 Nguyễn Chí Thành
-9MT1 Nguyễn Tân Thịnh
- 
-9MT2 Nguyễn Khánh An
-9MT2 Nguyễn Phương Anh
-9MT2 Nguyễn Trương Trí Anh
-9MT2 Tống Trang Anh
-9MT2 Trần Trâm Anh
-9MT2 Dương Trí Dũng
-9MT2 Phạm Văn Tuấn Dũng
-9MT2 Hoàng Bảo Duy
-9MT2 Nguyễn Ngân Giang
-9MT2 Phan Nguyễn Hà
-9MT2 Nguyễn Dương Gia Hân
-9MT2 Nguyễn Kim Khôi
-9MT2 Hà Tuấn Kiệt
-9MT2 Nguyễn Bảo Lâm
-9MT2 Đặng Ngọc Linh
-9MT2 Nguyễn Lê Khánh Linh
-9MT2 Phạm Bảo Nam
-9MT2 Nguyễn Thị Linh Ngân
-9MT2 Lê Phương Nghi
-9MT2 Doãn Vũ Chinh Phong
-9MT2 Phạm Minh Phúc
-9MT2 Conor Minh Tierney
-9MT2 Nguyễn An Mỹ Uyên
-9MT2 Phan Thảo Vy
 
-11AD3	Nguyễn Hồng Vân
-11AD3	Đinh Ngọc Tường Vy
-12AB2	Lê Diệp Anh
-12AB2	Nguyễn Phương Anh
-12AB2	Bùi Quang Anh
-12AB2	Nguyễn Đỗ Gia Ân
-12AB2	Nguyễn Gia Bảo
-12AB2	Trần Ngọc Dũng
-12AB2	Nguyễn Bảo Duy
-12AB2	Nguyễn Đình Thái Dương
-12AB2	Phạm Minh Đức
-12AB2	Trần Thành Đức
-12AB2	Lại Khánh Linh
-12AB2	Phạm Gia Linh
-12AB2	Võ Thị Cẩm Ly
-12AB2	Nguyễn Hải Nam
-12AB2	Lê Nguyễn
-12AB2	Ngô Ngọc Minh Như
-12AB2	Nguyễn Đình Sáng
-12AB2	Lưu Danh Toàn
-12AB2	Nguyễn Thu Uyên
-12AB2	Nguyễn Đình Anh Vũ
-12AB3	Lê Quỳnh Anh
-12AB3	Ngô Tuấn Anh
-12AB3	Trịnh Xuân Gia Bảo
-12AB3	Bùi Bảo Châu
-12AB3	Phùng Minh Châu
-12AB3	Vũ Huyền Chi
-12AB3	Nguyễn Thùy Dương
-12AB3	Ngô Minh Hiếu
-12AB3	Nguyễn Trần Huy Khánh
-12AB3	Du Thư Kỳ
-12AB3	Nguyễn Thị Hà Linh
-12AB3	Nguyễn Như Long
-12AB3	Đỗ Đức Minh
-12AB3	Nguyễn Hồng Minh
-12AB3	Nguyễn An Phong
-12AB3	Vũ Cao Phong
-12AB3	Nguyễn Minh Tân
-12AB3	Nguyễn Gia Thịnh
-12AB3	Nguyễn Quỳnh Trang
-12AB4	U-ngoen Cao Asawin
-12AB4	Đỗ Đoàn Khánh An
-12AB4	Cao Trần Thiên An
-12AB4	Nguyễn Mai Anh
-12AB4	Hoàng Vũ Trâm Anh
-12AB4	Nguyễn Thế Dũng
-12AB4	Nguyễn Ngọc Đức
-12AB4	Đặng Gia Khánh
-12AB4	Phạm Nam Khánh
-12AB4	Phạm Ngân Khánh
-12AB4	Doãn Anh Khôi
-12AB4	Đinh Gia Linh
-12AB4	Nguyễn Tô Mỹ Linh
-12AB4	Nguyễn Duy Đức Long
-12AB4	Nguyễn Minh
-12AB4	Nguyễn Vũ Hà My
-12AB4	Nguyễn Linh Ngọc
-12AB4	Phan Nguyễn
-12AB4	Lê Minh Phương
-12AB4	Kiều Lê Tất Thắng
-12AB4	Nguyễn Phương Tiến
-12AB4	Phạm Anh Trung
-12AB4	Nguyễn Tuấn Việt
-12AD1 Lê Quỳnh Anh
-12AD1 Trương Tuấn Dũng
-12AD1 Cao Việt Hà
-12AD1 Nguyễn Trung Kiên
-12AD1 Đào Trần Nhật Linh
-12AD1 Lê Khánh Linh
-12AD1 Đỗ Đức Minh
-12AD1 Phạm Bảo Minh
-12AD1 Nguyễn Hoàng Tuệ Trà
-12AD1 Tô Su Wu Yong
-12AD1 Nguyễn Trần Khánh Ly
-12AD2 Nguyễn Hải An
-12AD2 Hà Khánh An
-12AD2 Tống Phan Anh
-12AD2 Nguyễn Minh Hồng Anh
-12AD2 Đồng Thị Phương Anh
-12AD2 Hoàng Hà Thái Anh
-12AD2 Đàm Xuân Bách
-12AD2 Đỗ Quốc Bảo
-12AD2 Thái Quỳnh Chi
-12AD2 Nguyễn Thùy Dương
-12AD2 Hoàng Phúc Khang
-12AD2 Lê Công Khanh
-12AD2 Đỗ An Khánh
-12AD2 Lê Minh Khoa
-12AD2 Nguyễn Hà Bảo Linh
-12AD2 Kiều Phương Linh
-12AD2 Nguyễn Quang Minh
-12AD2 Bùi Tuấn Phát
-12AD2 Nguyễn Trí Sơn
-12AD2 Bùi Huy Tuấn
-12AD3 Lê Đức Anh
-12AD3 Trần Hoàng Anh
-12AD3 Nguyễn Quỳnh Anh
-12AD3 Trần Anh
-12AD3 Phạm Đức Anh
-12AD3 Vũ Đình Anh Đức
-12AD3 Vũ Đức Duy
-12AD3 Đinh Thị Ngọc Hà
-12AD3 Tạ Duy Hưng
-12AD3 Nghiêm Tuấn Khải
-12AD3 Nguyễn Dạ Khánh
-12AD3 Nguyễn Việt Khoa
-12AD3 Trần Minh Khuê
-12AD3 Nguyễn Phạm Gia Kỳ
-12AD3 Trần Uyên Lam
-12AD3 Lê Tuệ Minh
-12AD3 Phạm Nhật Nam
-12AD3 Đoàn Minh Phương
-12AD3 Đào Việt Sơn
-12AD3 Nguyễn Hữu Tuấn Thành
-12AD3 Phạm Gia Tuệ Trân
-12AD3 Trần Vũ Hoàng Tùng
+const LOCAL_API = "http://127.0.0.1:5000/api";       // mở file local trên máy server
+const LAN_API   = "http://192.168.1.5:5000/api";     // IP máy chạy CHAMTHI.py
 
-11AI	Lê Duy Anh
-11AI	Trần Ngọc Quân Anh
-11AI	Bùi Phan Duy Anh
-11AI	Hà Ngọc Bảo Chi
-11AI	Nguyễn Đắc Minh Đức
-11AI	Vũ Ngọc Hà
-11AI	Vũ Lê Trung Hiếu
-11AI	Nguyễn Vũ Duy Khánh
-11AI	Trương Lê Anh Minh
-11AI	Đoàn Yến Nhi
-11AI	Đỗ Vân Nhi
-11AI	Lê Bá Hồng Vĩnh
-11AI	Đặng Phước Khánh Lan
-12AI	Phùng Đức An
-12AI	Phạm Khánh Nam Anh
-12AI	Tào Tuệ Bách
-12AI	Lưu Trần Cương
-12AI	Nguyễn Quang Đức
-12AI	Lê Thụy Lam Khanh
-12AI	Ngô Trung Kiên
-12AI	Phạm Thị Khánh Linh
-12AI	Nguyễn Vĩnh Tuấn Minh
-12AI	Nguyễn Hồng Ngân
-12AI	Nguyễn Khang Vỹ
-11AB1	Nguyễn Đình Duy Khánh
-11AB1	Lê Trần Hải Lam
-11AB1	Hoàng Khánh Linh
-11AB1	Trần Bảo Long
-11AB1	Nguyễn Phúc Hiếu Minh
-11AB1	Trần Bảo Nam
-11AB1	Nguyễn Phúc Hải Nam
-11AB1	Nguyễn Thảo Phương
-11AB1	Nguyễn Anh Thư
-11AB1	Phạm Bảo Uyên
-11AB1	Nguyễn Hữu Quang Trung
-11AB2	Nguyễn Minh Anh
-11AB2	Phạm Nguyên An
-11AB2	Trần Duy Đức
-11AB2	Nguyễn Bùi Nguyên Hoàng
-11AB2	Nguyễn Việt Huy
-11AB2	Đặng Gia Hưng
-11AB2	Đinh An Khanh
-11AB2	Phạm Chí Kiên
-11AB2	Nguyễn Hào Minh Kiệt
-11AB2	Dương Ngọc Khánh Lâm
-11AB2	Trần Khánh Linh
-11AB2	Nguyễn Khánh Linh
-11AB2	Trần Tuấn Nam
-11AB2	Trịnh Bảo Ngân
-11AB2	Đinh Bảo Ngọc
-11AB2	Vũ Nguyễn Minh Ngọc
-11AB2	Nguyễn Cao An Phú
-11AB2	Bùi Bích Phương
-11AB2	Võ Hà Trang
-11AB2	Trương Gia Tuệ
-11AB2	Nguyễn Đặng Thanh Vân
-11AB2	Nhâm Tiến Việt
-11AB2	Huỳnh Hải Yến
-11AB3	Nguyễn Hà Trang Anh
-11AB3	Trương Trần Huyền Anh
-11AB3	Nguyễn Hoàng Minh Anh
-11AB3	Trần Hữu Tùng Bách
-11AB3	Mai Xuân Bách
-11AB3	Lương Gia Bảo
-11AB3	Trần Nguyễn Bảo Châu
-11AB3	Phạm Quỳnh Chi
-11AB3	Phạm Khánh Chi
-11AB3	Nguyễn Quang Dũng
-11AB3	Nguyễn Tuấn Dũng
-11AB3	Trịnh Tùng Dương
-11AB3	Nguyễn Khắc Hoàng Hà
-11AB3	Nguyễn Phương Thanh Hà
-11AB3	Giang Thanh Hải
-11AB3	Đỗ Huy Hoàng
-11AB3	Nguyễn Vũ Mai Khanh
-11AB3	Lê Ngân Khánh
-11AB3	Hoàng Anh Khoa
-11AB3	Nguyễn Tuấn Nghĩa
-11AB3	Trần Linh Phương
-11AB3	Nguyễn Minh Phương
-11AB3	Nguyễn Đức Trí
-11AB3	Lê Đức Trí
-11AB3	Tống Khánh Vy
-11AD1	Hoàng Đức Anh
-11AD1	Vũ Gia Bảo
-11AD1	Bùi Thanh Bình
-11AD1	Ngô Uyển Lam Chi
-11AD1	Lương Mạnh Cường
-11AD1	Nguyễn Ngọc Bảo Khanh
-11AD1	Bùi Xuân Lâm
-11AD1	Lê Bảo Long
-11AD1	Trần Phương Mai
-11AD1	Lê Phước Minh
+let API_BASE;
 
-11AD1	Mạc Chính Nghĩa
-11AD1	Trần Khánh Ngọc
-11AD1	Lê Đoàn Nam Phương
-11AD1	Nguyễn Minh Hồng Phượng
-11AD1	Vũ Hoàng Sơn
-11AD1	Nguyễn Thanh Thảo
-11AD1	Vũ Cầm Thi
-11AD1	Nguyễn Đình Thiên
-11AD1	Dương Khánh Vy
-11AD2	Nguyễn Gia Bảo
-11AD2	Cao Thùy Chi
-11AD2	Phạm Đức Hiển
-11AD2	Hoàng Gia Huy
-11AD2	Đặng Duy Khánh
-11AD2	Nguyễn Hiểu Khánh
-11AD2	Thạch Ngọc Mai
-11AD2	Nguyễn Quang Bình Minh
-11AD2	Lê Đức Nam
-11AD2	Đào An Việt Phương
-11AD2	Nguyễn Vũ Bảo Trân
-11AD3	Trần Ngọc Julianne Khánh An
-11AD3	Nguyễn Phương Anh
-11AD3	Đinh Hà Anh
-11AD3	Đỗ Hưng Bình
-11AD3	Lê Bảo Châu
-11AD3	Nguyễn Khánh Chi
-11AD3	Phạm Thùy Chi
-11AD3	Phạm Đức Huy
-11AD3	Lê Công Khôi
-11AD3	Tạ Đình Tuấn Khôi
-11AD3	Vũ Hải Lâm
-11AD3	Nguyễn Ngô Phương Lâm
-11AD3	Nguyễn Hoàng Khánh Linh
-11AD3	Nguyễn Hữu Minh
-11AD3	Vũ Đức Minh
-11AD3	Dương Thanh Ngân
-11AD3	Đinh Nguyễn Khánh Ngọc
-11AD3	Lê Dạ Minh Nguyệt
-11AD3	Ngô Anh Nhi
-11AD3	Nguyễn Phạm Hồng Nhung
-11AD3	Hồ Hà Phương
-11AD3	Lương Anh Tài
-11AD3	Trịnh Quang Minh
-10AB1	Nguyễn Duy Anh
-10AB1	Đào Hà Anh
-10AB1	Lã Phương Anh
-10AB1	Đỗ Việt Anh
-10AB1	Phan Minh Dũng
-10AB1	Hoàng Gia Hưng
-10AB1	Đỗ Minh Huy
-10AB1	Nguyễn Trung Kiên
-10AB1	Hồ Đức Minh
-10AB1	Nguyễn Phú Minh
-10AB1	Nguyễn Khắc Hoài Nam
-10AB1	Hoàng Minh Quang
-10AB1	Nguyễn Thu Trang
-10AB1	Dương Trần Bảo Uyên
-10AB2	Nguyễn Đức Anh
-10AB2	Đoàn Phương Anh
-10AB2	Nguyễn Tuệ Châu
-10AB2	Lê Thành Công
-10AB2	Phạm Anh Đức
-10AB2	Hoàng Lê Minh
-10AB2	Chử Ngọc Minh
-10AB2	Nguyễn Tuấn Minh
-10AB2	Lê Đoàn Bảo Nam
-10AB2	Trịnh An Phú
-10AB2	Nguyễn Đinh Gia Phú
-10AB2	Nguyễn Xuân Hoàng Sơn
-10AB2	Nguyễn Minh Tâm
-10AB2	Vũ Giang Xuân Thái
-10AB2	Bùi Sỹ Tuấn
-10AB2	Lưu Hoàng Tùng
-10AB2	Trần Hoàng Vũ
-10AB2	Trịnh Quang Vũ
-10AB2	Nguyễn Bảo Ngọc Anh
-10AB3	Vũ Gia An
-10AB3	Lê Hùng Anh
-10AB3	Nguyễn Linh Anh
-10AB3	Đinh Hoàng Bách
-10AB3	Đinh Thùy Dương
-10AB3	Đàm Bảo Hân
-10AB3	Ngô Gia Hân
-10AB3	Nguyễn Gia Huy
-10AB3	Lê Minh Tuấn Khang
-10AB3	Tạ Minh Khôi
-10AB3	Nguyễn Bảo Linh
-10AB3	Vương Ngọc Linh
-10AB3	Nguyễn Trúc Linh
-10AB3	Nguyễn Ngọc Uyên Linh
-10AB3	Lã Hoàng Vân Linh
-10AB3	Nguyễn Hiển Long
-10AB3	Đinh Anh Minh
-10AB3	Nguyễn Đức Minh
-10AB3	Phùng Khánh Ngọc
-10AB3	Trần Khánh Ngọc
-10AB3	Nguyễn Minh Quân
-10AB3	Mai Ngọc Bảo Sơn
-10AB3	Lê Đức Thiện
-10AB3	Nguyễn Minh Tuấn
-10AB3	Phạm Anh Tùng
-10AD1	Nguyễn Angelina
-10AD1	Nguyễn Hà Anh
-10AD1	Nguyễn Ngọc Anh
-10AD1	Bùi Phan Vân Anh
-10AD1	Trương Gia Bảo
-10AD1	Nguyễn Quốc Bảo
-10AD1	Chu Vũ Ngọc Chi
-10AD1	Phạm Ngân Hà
-10AD1	Thạch Gia Hân
-10AD1	Nguyễn Trần Khánh Hưng
-10AD1	Nguyễn Khánh Lâm
-10AD1	Dương Diệu Linh
-10AD1	Hồ Thiện Minh
-10AD1	Nguyễn Xuân Hải Nam
-10AD1	Nguyễn Anh Phong
-10AD1	Nguyễn Phạm Nam Phong
-10AD1	Nguyễn Khang Thịnh
-10AD1	Nguyễn Khánh An
-10AD2	Tống Duy Anh
-10AD2	Lê Nam Anh
-10AD2	Lưu Trung Anh
-10AD2	Vũ Đức Chính
-10AD2	Trần Nguyên Đức
-10AD2	Lương Thanh Hà
-10AD2	Trịnh Bảo Hân
-10AD2	Lê Bội Linh
-10AD2	Lê Chúc Linh
-10AD2	Nguyễn Vũ Long
-10AD2	Lê Quang Minh
-10AD2	Ngô Quang Minh
-10AD2	Phùng Khắc Minh
-10AD2	Trần Khôi Minh
-10AD2	Bùi Trí Nguyên
-10AD2	Nguyễn Tuấn Phong
-10AD2	Nguyễn Minh Quang
-10AD2	Nguyễn Hải Trà
-10AP	Phạm Quốc An
-10AP	Lưu Bảo Anh
-10AP	Nguyễn Khải Anh
-10AP	Tạ Tuấn Anh
-10AP	Lưu Việt Anh
-10AP	Trần Thị Hạnh Dung
-10AP	Nguyễn Khánh Hà
-10AP	Nguyễn Phú Khang
-10AP	Hàn Ngọc Linh
-10AP	Hoàng Như Mai
-10AP	Lê Nhật Minh
-10AP	Nguyễn Nhật Minh
-10AP	Nguyễn Dương Bảo Minh
-10AP	Nguyễn Phạm Hiền Minh
-10AP	Hoàng Kiều Ngân
-10AP	Lê Thủy Nguyên
-10AP	Nguyễn Ngọc Mỹ Quyên
-10AP	Trương Tấn Vượng
-11AB1	Tạ Nguyễn Hoa Anh
-11AB1	Trần Minh Ánh
-11AB1	Trần Quang Anh
-11AB1	Nguyễn Minh Đức
-11AB1	Đặng Bảo Hân
-11AB1	Đào Tuấn Hùng
-`.trim();
-/* ===== BIẾN TOÀN CỤC ===== */
-let dsAnh = [];   // Danh sách ảnh của 1 lỗi
-/* ====== CHUYỂN RAW → DS_LOP_HOC_SINH ====== */
-const DS_LOP_HOC_SINH = {};
-
-DS_LOP_RAW
-  .split("\n")
-  .map(l => l.trim())
-  .filter(l => l)
-  .forEach(line => {
-    const parts = line.split(/\s+/);
-    const lop = parts.shift();          // phần đầu là lớp
-    const ten = parts.join(" ");         // phần còn lại là tên đầy đủ
-
-    if (!DS_LOP_HOC_SINH[lop]) {
-      DS_LOP_HOC_SINH[lop] = [
-        `LỖI TẬP THỂ LỚP (${lop})`
-      ];
-    }
-    DS_LOP_HOC_SINH[lop].push(ten);
-  });
-
-/* ===== OFFLINE QUEUE ===== */
-const KEY_PENDING = "GT_PENDING_QUEUE";
-
-function capNhatHocSinhSua() {
-  const lop = document.getElementById("sua_lop").value;
-  const hs = HOC_SINH.filter(h => h.lop === lop);
-  const sel = document.getElementById("sua_ho_ten");
-  sel.innerHTML = hs.map(h => `<option>${h.ten}</option>`).join("");
+if (location.protocol === "file:") {
+    API_BASE = LOCAL_API;
+} 
+else if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+    API_BASE = LOCAL_API;
 }
-
-function capNhatViPhamSua() {
-  const loai = document.getElementById("sua_loai").value;
-  const vp = QUY_DINH_RAW[loai] || [];
-  const sel = document.getElementById("sua_vi_pham");
-  sel.innerHTML = vp.map(v => `<option>${v.noi_dung}</option>`).join("");
+else {
+    API_BASE = LAN_API;
 }
+let examConfirmed = false;
 
-function dongDeXuat() {
-  document.getElementById("popupSua").style.display = "none";
-}
+// ===============================
+// OFFLINE QUEUE (IndexedDB)
+// ===============================
 
+let offlineDB;
 
-function getPendingQueue() {
-  return JSON.parse(localStorage.getItem(KEY_PENDING) || "[]");
-}
+const dbRequest = indexedDB.open("vovinam_offline_db", 1);
 
+dbRequest.onupgradeneeded = function (event) {
+    offlineDB = event.target.result;
+    offlineDB.createObjectStore("score_queue", { keyPath: "id" });
+};
 
-function savePendingQueue(queue) {
-  localStorage.setItem(KEY_PENDING, JSON.stringify(queue));
-}
+dbRequest.onsuccess = function (event) {
+    offlineDB = event.target.result;
+};
 
-function addPending(item) {
-  const queue = getPendingQueue();
-  queue.unshift(item);  // Thêm lỗi vào đầu danh sách
-  savePendingQueue(queue);  // Lưu lại vào localStorage
-}
+function saveToQueue(payload) {
 
-function savePendingQueue(queue) {
-  localStorage.setItem(KEY_PENDING, JSON.stringify(queue));
-}
-
-
-function removePending(localId) {
-  savePendingQueue(
-    getPendingQueue().filter(x => x.localId !== localId)
-  );
-}
-
-  
-function layLopTheoKhoi(khoi) {
-  return Object.keys(DS_LOP_HOC_SINH)
-    .filter(lop => {
-      if (khoi === "THCS") {
-        return /^[6-9]/.test(lop);
-      }
-      if (khoi === "THPT") {
-        return /^(10|11|12)/.test(lop);
-      }
-      return false;
-    })
-    .sort();
-}
-
-function quenMatKhau() {
-  const sel = document.getElementById("quen_user");
-  sel.innerHTML = "<option value=''>-- Chọn người --</option>";
-
-  DS_USER_GT.forEach(u => {
-    const opt = document.createElement("option");
-    opt.value = opt.textContent = u;
-    sel.appendChild(opt);
-  });
-
-  document.getElementById("popupQuenMK").style.display = "flex";
-}
-
-function dongQuenMK() {
-  document.getElementById("popupQuenMK").style.display = "none";
-}
-
-function guiYeuCauQuenMK() {
-  const user = document.getElementById("quen_user").value;
-  if (!user) {
-    alert("Vui lòng chọn người xử lý");
-    return;
-  }
-
-  fetch(API_ROOT + "/api/quen-mat-khau", {
-    method: "POST",
-    body: JSON.stringify({
-      username: user,
-      thoi_gian: new Date().toISOString()
-    })
-  })
-  .then(r => r.json())
-  .then(res => {
-    if (!res.ok) throw res.msg;
-
-    alert("✅ Đã gửi yêu cầu. Vui lòng chờ quản trị xử lý.");
-    dongQuenMK();
-  })
-  .catch(err => {
-    alert("❌ " + err);
-  });
-}
-
-function capNhatNguoiXuLy() {
-  const u = sessionStorage.getItem("GT_LOGIN_USER");
-  const el = document.getElementById("nguoi_hienthi");
-
-  if (!u) {
-    el.textContent = "⏳ Chưa đăng nhập";
-  } else {
-    el.textContent = "👤 Người xử lý: " + u + " (đã đăng nhập)";
-  }
-}
-
-
-document.getElementById("khoi").addEventListener("change", function () {
-  napLopTheoKhoi(this.value);
-});
-
-function napLopTheoKhoi(khoi) {
-  const selLop = document.getElementById("lop");
-  const selHS  = document.getElementById("ho_ten");
-
-  selLop.innerHTML = '<option value="">-- Chọn lớp --</option>';
-  selHS.innerHTML  = '<option value="">-- Chọn học sinh / lỗi tập thể --</option>';
-
-  if (!khoi) return;
-
-  layLopTheoKhoi(khoi).forEach(lop => {
-    const opt = document.createElement("option");
-    opt.value = opt.textContent = lop;
-    selLop.appendChild(opt);
-  });
-}
-
-
-function xemAnh(src){
-  const viewer = document.getElementById("imgViewer");
-  const img    = document.getElementById("imgViewerImg");
-
-  img.src = "";  // 🔥 reset để tránh cache lỗi trên mobile
-
-  setTimeout(() => {
-    img.src = src + "?t=" + Date.now(); // 🔥 ép load lại
-  }, 20);
-
-  viewer.style.display = "flex";
-}
-
-function xemAnhThongMinh(src){
-  if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-    location.href = src;   // 🔥 mobile mở ảnh gốc
-  } else {
-    xemAnh(src);           // desktop dùng overlay
-  }
-}
-
-function dongAnh(){
-  const viewer = document.getElementById("imgViewer");
-  viewer.style.display = "none";
-}
-
-function napHocSinhTheoLop(lop) {
-  const selHS = document.getElementById("ho_ten");
-  selHS.innerHTML = '<option value="">-- Chọn học sinh / lỗi tập thể --</option>';
-
-  if (!lop || !DS_LOP_HOC_SINH[lop]) return;
-
-  // Danh sách học sinh
-  DS_LOP_HOC_SINH[lop].forEach(ten => {
-    const opt = document.createElement("option");
-    opt.value = opt.textContent = ten;
-    selHS.appendChild(opt);
-  });
-}
-
-document.getElementById("lop").addEventListener("change", function () {
-  napHocSinhTheoLop(this.value);
-});
-
-/* ====== CHUYỂN RAW → DỮ LIỆU SỬ DỤNG ====== */
-const QUY_DINH_VI_PHAM = QUY_DINH_RAW
-  .split("\n")
-  .map(line => line.trim())
-  .filter(line => line)            // ⬅️ LOẠI BỎ DÒNG TRỐNG
-  .map(line => {
-    const [loai, vipham, cap] = line.split("|");
-    return {
-      loai: loai.trim(),
-      vipham: vipham.trim(),
-      capdo: "Mức độ " + cap.trim()
-    };
-  });
-
-const API="https://gt.giamthiwellspring.site/send";
-const KEY="GT_HISTORY";
-let editIndex=null;
-
-const status = document.getElementById("status");
-
-function napLoai(){
-  const selLoai = document.getElementById("loai");
-  selLoai.innerHTML = '<option value="">-- Chọn loại --</option>';
-
-  const dsLoai = [...new Set(QUY_DINH_VI_PHAM.map(v => v.loai))];
-  dsLoai.forEach(loai => {
-    const opt = document.createElement("option");
-    opt.value = opt.textContent = loai;
-    selLoai.appendChild(opt);
-  });
-}
-
-let SUA_ID = null;
-
-function deXuatSuaDB(id){
-  SUA_ID = id;
-  document.getElementById("noi_dung_sua").value = "";
-  document.getElementById("popupSua").style.display = "flex";
-}
-
-function dongDeXuat(){
-  document.getElementById("popupSua").style.display = "none";
-}
-
-function guiDeXuat() {
-  const noiDung = document.getElementById("noi_dung_sua").value;
-  const file = document.getElementById("anh_minh_chung")?.files[0];
-
-  const formData = new FormData();
-  formData.append("noi_dung", noiDung);
-
-  if (file) {
-    formData.append("anh", file);
-  }
-
-  fetch("/api/gui_de_xuat", {
-    method: "POST",
-    body: formData   // ✅ KHÔNG SET headers
-  })
-  .then(r => r.json())
-  .then(d => {
-    alert(d.msg || "Đã gửi");
-  })
-  .catch(err => {
-    alert("Không kết nối được máy chủ");
-    console.error(err);
-  });
-}
-
-
-// ===== DANH SÁCH GIÁM THỊ =====
-const DS_USER_GT = [
-  "GT Trần Duy Linh",
-  "GT Đỗ Mạnh Toàn",
-  "GT Phan Tuấn Anh",
-  "GT Đỗ Thị Hường",
-  "GT Lê Nhật Long",
-  "GT Nguyễn Văn Hà",
-  "GT Lê Trung Kiên",
-  "GT Hoàng Quang Trung",
-  "GT Nguyễn Trà My",
-  "GT Ngô Thị Ngọc Ánh",
-  "GT Nguyễn Sơn Thành"
-];
-
-
-function napUserDangNhap() {
-  const sel = document.getElementById("login_user");
-  sel.innerHTML = "<option value=''>-- Chọn người --</option>";
-
-  DS_USER_GT.forEach(u => {
-    const opt = document.createElement("option");
-    opt.value = opt.textContent = u;
-    sel.appendChild(opt);
-  });
-}
-
-
-const API_ROOT = API.replace("/send", "");
-
-function xemAnh(src) {
-  document.getElementById("viewerImg").src = src;
-  document.getElementById("viewer").style.display = "flex";
-}
-
-function dangNhap() {
-  const user = document.getElementById("login_user").value;
-  const pass = document.getElementById("login_pass").value;
-  const err  = document.getElementById("login_err");
-
-  if (!user || !pass) {
-    err.textContent = "Vui lòng nhập đủ thông tin";
-    return;
-  }
-
-  err.textContent = "⏳ Đang xác thực...";
-
-  // Thử gọi lên server như cũ
-  fetch(API_ROOT + "/api/login", {
-    method: "POST",
-    body: JSON.stringify({ user, password: pass })
-  })
-  .then(r => r.json())
-  .then(res => {
-    if (!res.ok) throw res.error;
-
-    sessionStorage.setItem("GT_LOGIN_USER", res.user);
-    sessionStorage.setItem("GT_ROLE", res.role);
-
-    capNhatNguoiXuLy();
-    document.getElementById("loginBox").style.display = "none";
-
-    if (res.must_change_pw) {
-      document.getElementById("popupDoiMK").style.display = "flex";
-    }
-  })
-  .catch(() => {
-    // 🔁 Nếu server tắt → fallback offline login
-    const DS_USER_GT = [
-      "GT Trần Duy Linh", "GT Đỗ Mạnh Toàn", "GT Phan Tuấn Anh",
-      "GT Đỗ Thị Hường", "GT Lê Nhật Long", "GT Nguyễn Văn Hà",
-      "GT Lê Trung Kiên", "GT Hoàng Quang Trung", "GT Nguyễn Trà My",
-      "GT Ngô Thị Ngọc Ánh", "GT Nguyễn Sơn Thành"
-    ];
-
-    if (DS_USER_GT.includes(user)) {
-      sessionStorage.setItem("GT_LOGIN_USER", user);
-      sessionStorage.setItem("GT_ROLE", "offline");
-
-      capNhatNguoiXuLy();
-      document.getElementById("loginBox").style.display = "none";
-    } else {
-      err.textContent = "Không thể kết nối server và tài khoản không hỗ trợ offline";
-    }
-  });
-}
-
-
-document.getElementById("loai").addEventListener("change", function () {
-  const loai = this.value;
-  const selVP = document.getElementById("vi_pham");
-  const capDo = document.getElementById("cap_do");
-
-  selVP.innerHTML = '<option value="">-- Chọn vi phạm --</option>';
-  capDo.value = "";
-
-  if (!loai) return;
-
-  QUY_DINH_VI_PHAM
-    .filter(v => v.loai === loai)
-    .forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = opt.textContent = v.vipham;
-      selVP.appendChild(opt);
-    });
-});
-
-document.getElementById("vi_pham").addEventListener("change", function () {
-  const vp = this.value;
-  const loai = document.getElementById("loai").value;
-  const capDo = document.getElementById("cap_do");
-
-  const found = QUY_DINH_VI_PHAM.find(
-    v => v.loai === loai && v.vipham === vp
-  );
-
-  capDo.value = found ? found.capdo : "";
-});
-
-function renderTable(data) {
-  const tbody = document.getElementById("all_loi");
-  tbody.innerHTML = "";
-
-  data.forEach(row => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${row.ngay}</td>
-      <td>${row.lop}</td>
-      <td>${row.hoc_sinh}</td>
-      <td>${row.thoi_gian || ""}</td>
-      <td>${row.loai}</td>
-      <td>${row.vi_pham}</td>
-      <td>${row.mo_ta || ""}</td>
-      <td>${row.cap_do}</td>
-      <td>${row.so_lan}</td>
-      <td>${row.diem_tru}</td>
-      <td>${row.nguoi}</td>
-      <td>${renderAnh(row.anh)}</td>
-    `;
-
-    tbody.appendChild(tr);
-  });
-}
-
-
-function openTab(i){
-  document.querySelectorAll(".tab").forEach((t,n)=>t.classList.toggle("active",n===i));
-  document.querySelectorAll(".page").forEach((p,n)=>p.classList.toggle("active",n===i));
-  if (i === 1) veBang();
-  if (i === 2) loadAllLoi(); 
-}
-function getData(){ return JSON.parse(localStorage.getItem(KEY)||"[]"); }
-function saveData(d){ localStorage.setItem(KEY,JSON.stringify(d)); }
-
-function resizeAnh(file, maxW = 1280, quality = 0.7) {
-  return new Promise(resolve => {
-    const img = new Image();
-    const reader = new FileReader();
-
-    reader.onload = e => {
-      img.onload = () => {
-        let w = img.width;
-        let h = img.height;
-
-        if (w > maxW) {
-          h = h * maxW / w;
-          w = maxW;
-        }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
-
-        canvas.toBlob(blob => {
-          resolve(new File([blob], file.name, { type: "image/jpeg" }));
-        }, "image/jpeg", quality);
-      };
-      img.src = e.target.result;
-    };
-
-    reader.readAsDataURL(file);
-  });
-}
-
-function taiAnhJPG(src, tenFile = "anh_minh_chung.jpg") {
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-
-  img.onload = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width  = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#fff";        // nền trắng (tránh PNG trong suốt)
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0);
-
-    canvas.toBlob(blob => {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = tenFile.replace(/\.[^/.]+$/, "") + ".jpg";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    }, "image/jpeg", 0.92); // chất lượng cao
-  };
-
-  img.onerror = () => {
-    alert("❌ Không tải được ảnh");
-  };
-
-  img.src = src + (src.includes("?") ? "&" : "?") + "t=" + Date.now();
-}
-
-// ====== ẢNH MINH CHỨNG ======
-let fileAnh = null;
-let previewURL = null;
-
-function moChonAnh() {
-  const inp = document.getElementById("anh_chon");
-  inp.click();
-
-  inp.onchange = () => {
-    for (const f of inp.files) {
-      dsAnh.push(f);
-    }
-    hienPreviewNhieuAnh();
-  };
-}
-
-
-function moChupAnh() {
-  document.getElementById("anh_chup").click();
-}
-
-document.getElementById("anh_chon").addEventListener("change", e => {
-  if (e.target.files.length > 0) {
-    fileAnh = e.target.files[0];
-    hienPreview(fileAnh);
-    document.getElementById("anh_chup").value = "";
-  }
-});
-
-document.getElementById("anh_chup").addEventListener("change", e => {
-  if (e.target.files.length > 0) {
-    fileAnh = e.target.files[0];
-    hienPreview(fileAnh);
-    document.getElementById("anh_chon").value = "";
-  }
-});
-
-function hienPreview(file) {
-  if (previewURL) URL.revokeObjectURL(previewURL);
-
-  previewURL = URL.createObjectURL(file);
-
-  document.getElementById("preview_anh").innerHTML = `
-    <div style="display:inline-block; position:relative;">
-      <img src="${previewURL}"
-           style="max-width:120px;border:1px solid #ccc;border-radius:4px">
-
-      <button type="button"
-              onclick="xoaAnh()"
-              style="
-                position:absolute;
-                top:-8px;
-                right:-8px;
-                width:22px;
-                height:22px;
-                border-radius:50%;
-                border:none;
-                background:#d32f2f;
-                color:white;
-                font-weight:bold;
-                cursor:pointer;
-              ">
-        ×
-      </button>
-    </div>
-  `;
-}
-
-function xoaAnh() {
-  // hủy URL preview
-  if (previewURL) {
-    URL.revokeObjectURL(previewURL);
-    previewURL = null;
-  }
-
-  // xóa file đang giữ
-  fileAnh = null;
-
-  // reset input file
-  document.getElementById("anh_chon").value = "";
-  document.getElementById("anh_chup").value = "";
-
-  // xóa preview
-  document.getElementById("preview_anh").innerHTML = "";
-}
-
-function xoaAnh(i) {
-  dsAnh.splice(i, 1);
-  hienPreviewNhieuAnh();
-}
-
-async function gui() {
-  if (!ngay.value || !lop.value || !ho_ten.value || !vi_pham.value) {
-    status.textContent = "⚠️ Thiếu thông tin bắt buộc";
-    status.className = "status err";
-    return;
-  }
-
-  const nguoiDangNhap = sessionStorage.getItem("GT_LOGIN_USER");
-  if (!nguoiDangNhap) {
-    status.textContent = "⚠️ Phiên đăng nhập đã hết";
-    status.className = "status err";
-    document.getElementById("loginBox").style.display = "flex";
-    return;
-  }
-
-  const fd = new FormData();
-  fd.append("ngay", ngay.value);
-  fd.append("lop", lop.value);
-  fd.append("ho_ten", ho_ten.value);
-  fd.append("thoi_gian", thoi_gian.value);
-  fd.append("loai", loai.value);
-  fd.append("vi_pham", vi_pham.value);
-  fd.append("mo_ta", mo_ta.value);
-  fd.append("hinh_thuc", hinh_thuc.value);
-  fd.append("diem_tru", diem_tru.value);
-  fd.append("nguoi", nguoiDangNhap);
-
-  dsAnh.forEach(f => fd.append("anh[]", f));
-
-  status.textContent = "⏳ Đang gửi dữ liệu...";
-  status.className = "status wait";
-
-  try {
-    const controller = new AbortController();
-    setTimeout(() => controller.abort(), 5000);
-
-    const r = await fetch(API, {
-      method: "POST",
-      body: fd,
-      signal: controller.signal
-    });
-
-    const res = await r.json();
-    if (!res.ok) throw res.error;
-
-    status.textContent = "✅ Gửi thành công";
-    status.className = "status ok";
-  } catch (e) {
-    addPending({
-      localId: "LOCAL_" + Date.now(),
-      status: "pending",
-      nguoi: nguoiDangNhap,
-      ngay: ngay.value,
-      lop: lop.value,
-      ho_ten: ho_ten.value,
-      thoi_gian: thoi_gian.value,
-      loai: loai.value,
-      vi_pham: vi_pham.value,
-      mo_ta: mo_ta.value,
-      hinh_thuc: hinh_thuc.value,
-      diem_tru: diem_tru.value
-    });
-
-    status.textContent =
-      "⚠️ Server đang tắt – đã lưu vào Lịch sử (Chưa gửi)";
-    status.className = "status err";
-
-    veBang();
-  }
-}
-
-function renderPending(tb, list) {
-  list.forEach(p => {
-    tb.innerHTML += `
-      <tr>
-        <td>${formatNgayDDMMYYYY(p.ngay)}</td>
-        <td>${p.lop}</td>
-        <td>${p.ho_ten}</td>
-        <td>${p.vi_pham}</td>
-        <td>${p.thoi_gian || ""}</td>
-        <td class="pending">Chưa gửi</td>
-        <td class="action">
-          <button class="btn resend"
-            onclick="guiLaiPending('${p.localId}')">🔁 Gửi lại</button>
-          <button class="btn delete"
-            onclick="xoaPending('${p.localId}')">🗑️ Xóa</button>
-        </td>
-      </tr>
-    `;
-  });
-}
-
-
-function renderAnh(anhStr) {
-  if (!anhStr) return "";
-
-  const ds = anhStr.split("|");
-  let html = "";
-
-  ds.forEach(path => {
-    html += `
-      <img
-        src="${path}"
-        class="anh-mini"
-        onclick="xemAnh('${path}')"
-      >
-    `;
-  });
-
-  return html;
-}
-
-
-
-const ngayInput   = document.getElementById("ngay");
-const ngayHienThi = document.getElementById("ngay_hienthi");
-
-function capNhatNgayHienThi() {
-  if (ngayInput.value) {
-    ngayHienThi.textContent =
-      "Ngày đã chọn: " + formatNgayDDMMYYYY(ngayInput.value);
-  } else {
-    ngayHienThi.textContent = "";
-  }
-}
-
-ngayInput.addEventListener("change", capNhatNgayHienThi);
-
-function hienPreviewNhieuAnh() {
-  const box = document.getElementById("preview_anh");
-  box.innerHTML = "";
-
-  dsAnh.forEach((f, i) => {
-    const url = URL.createObjectURL(f);
-    box.innerHTML += `
-      <div style="display:inline-block;position:relative;margin:4px">
-        <img src="${url}" class="img-preview"
-             onclick="xemAnh('${url}')">
-        <button onclick="xoaAnh(${i})"
-          style="position:absolute;top:-6px;right:-6px;
-                 background:#d32f2f;color:white;border:none;
-                 border-radius:50%;width:18px;height:18px">×</button>
-      </div>
-    `;
-  });
-}
-
-function veBang() {
-  const tb = document.getElementById("lichsu");
-  tb.innerHTML = "<tr><td colspan='7'>⏳ Đang tải dữ liệu...</td></tr>";
-
-  const user = sessionStorage.getItem("GT_LOGIN_USER");
-  if (!user) {
-    tb.innerHTML = "<tr><td colspan='7'>Chưa đăng nhập</td></tr>";
-    return;
-  }
-
-  const API_ROOT = API.replace("/send", "");
-  const url = API_ROOT + "/api/my?nguoi=" + encodeURIComponent(user);
-
-  // Lấy danh sách pending từ localStorage
-  const pendingQueue = getPendingQueue();
-  const pendingOfUser = pendingQueue.filter(x => x.nguoi === user);
-
-  fetch(url)
-    .then(r => r.json())
-    .then(ds => {
-      // Kiểm tra xem ds có phải là mảng không
-      if (!Array.isArray(ds)) {
-        ds = [];
-      }
-      
-      // Kết hợp dữ liệu từ server và pending
-      const allItems = [
-        // Dữ liệu từ server (đã gửi)
-        ...ds.map(item => ({
-          ...item,
-          source: 'server',
-          status: 'sent'
-        })),
-        // Dữ liệu pending (chưa gửi)
-        ...pendingOfUser.map(item => ({
-          ...item,
-          source: 'pending',
-          status: 'pending',
-          id: item.localId // Dùng localId thay cho id
-        }))
-      ];
-
-      // Sắp xếp theo thời gian (mới nhất lên đầu)
-      allItems.sort((a, b) => {
-        const dateA = new Date(a.ngay || '1970-01-01');
-        const dateB = new Date(b.ngay || '1970-01-01');
-        return dateB - dateA;
-      });
-
-      if (allItems.length === 0) {
-        tb.innerHTML = "<tr><td colspan='7'>Chưa có lỗi nào</td></tr>";
+    if (!offlineDB) {
+        console.log("Offline DB chưa sẵn sàng");
         return;
-      }
+    }
 
-      tb.innerHTML = "";
-      allItems.forEach(item => {
-        const isPending = item.source === 'pending';
-        const statusText = isPending ? "Chưa gửi" : "Đã gửi";
-        const statusClass = isPending ? "pending" : "sent";
-        const itemId = isPending ? item.localId : item.id;
+    const tx = offlineDB.transaction("score_queue", "readwrite");
+    const store = tx.objectStore("score_queue");
 
-        tb.innerHTML += `
-          <tr>
-            <td>${formatNgayDDMMYYYY(item.ngay)}</td>
-            <td>${item.lop || ""}</td>
-            <td>${item.ho_ten || ""}</td>
-            <td>${item.vi_pham || ""}</td>
-            <td>${item.thoi_gian || ""}</td>
-            <td class="${statusClass}">${statusText}</td>
-            <td class="action">
-              ${isPending ? `
-                <button class="btn resend" 
-                  onclick="guiLaiPending('${itemId}')">🔁 Gửi lại</button>
-                <button class="btn delete" 
-                  onclick="xoaPending('${itemId}')">🗑️ Xóa</button>
-              ` : `
-                <button class="btn resend" 
-                  onclick="guiLaiDB(${itemId})">🔁 Gửi lại</button>
-                <button class="btn delete" 
-                  onclick="xoaDB(${itemId})">🗑️ Xóa</button>
-                <button class="btn edit" 
-                  onclick="suaTrucTiepDB(${itemId})">✏️ Sửa</button>
-              `}
-            </td>
-          </tr>
-        `;
-      });
-    })
-    .catch(() => {
-      // Nếu không kết nối được server, chỉ hiển thị pending
-      tb.innerHTML = "";
-      
-      if (pendingOfUser.length === 0) {
-        tb.innerHTML = "<tr><td colspan='7'>Server tắt và không có lỗi chưa gửi</td></tr>";
-      } else {
-        renderPending(tb, pendingOfUser);
-      }
+    store.put({
+        id: payload.batch_id,
+        data: payload,
+        created_at: Date.now()
     });
 }
 
-async function guiLaiPending(localId) {
-  const item = getPendingQueue().find(x => x.localId === localId);
-  if (!item) return;
+function removeFromQueue(id) {
 
-  const fd = new FormData();
-  Object.entries(item).forEach(([k, v]) => {
-    if (!["localId", "status"].includes(k)) fd.append(k, v || "");
-  });
+    if (!offlineDB) return;
 
-  try {
-    const r = await fetch(API, { method: "POST", body: fd });
-    const res = await r.json();
-    if (!res.ok) throw res.error;
-
-    // Xóa lỗi đã gửi thành công
-    removePending(localId);
-    
-    // Hiển thị thông báo
-    alert("✅ Đã gửi lại thành công");
-    
-    // Cập nhật lại bảng
-    veBang();
-  } catch {
-    alert("⚠️ Server vẫn chưa mở");
-  }
+    const tx = offlineDB.transaction("score_queue", "readwrite");
+    tx.objectStore("score_queue").delete(id);
 }
 
+function getAllQueue(callback) {
+    const tx = offlineDB.transaction("score_queue", "readonly");
+    const store = tx.objectStore("score_queue");
 
-function xoaPending(localId) {
-  if (!confirm("Xóa lỗi chưa gửi?")) return;
-  removePending(localId);
-  veBang();
+    const req = store.getAll();
+    req.onsuccess = function () {
+        callback(req.result);
+    };
 }
+// ===================
+// LOAD KHÓA THI
+// ===================
+function loadExams(){
+    fetch(API_BASE + "/exams")
+    .then(res => res.json())
+    .then(data => {
+        const select = document.getElementById("examSelect");
+        select.innerHTML = "";
 
-window.addEventListener("online", () => {
-  const pendingQueue = getPendingQueue();
-  pendingQueue.forEach(p => {
-    guiLaiPending(p.localId);  // Gửi lại lỗi chưa gửi
-  });
-});
+        data.forEach(exam=>{
+            select.innerHTML += `<option value="${exam}">${exam}</option>`;
+        });
 
-
-function saveNewPassword() {
-    fetch("/api/change-password-first", {
-        method: "POST",
-        body: JSON.stringify({
-            username: currentUser,
-            new_password: newPassword
-        })
+        loadBelts();
     })
-    .then(r => r.json())
-    .then(res => {
-        if (!res.ok) {
-            alert(res.error);
+    .catch(err => {
+        alert("Không kết nối được server!");
+        console.log(err);
+    });
+}
+
+// ===================
+// LOAD CẤP ĐAI
+// ===================
+function loadBelts(){
+    const exam = document.getElementById("examSelect").value;
+
+    fetch(API_BASE + "/belts?exam=" + encodeURIComponent(exam))
+    .then(res => res.json())
+    .then(data => {
+        const select = document.getElementById("beltSelect");
+        select.innerHTML = "";
+
+        data.forEach(belt=>{
+            select.innerHTML += `<option value="${belt}">${belt}</option>`;
+        });
+        loadExamHeaders();
+        loadCandidates();
+    });
+}
+
+// ===================
+// LOAD THÍ SINH
+// ===================
+function loadExamHeaders(){
+    const belt = document.getElementById("beltSelect").value;
+
+    fetch(`${API_BASE}/exam_contents?belt=${encodeURIComponent(belt)}`)
+    .then(res => res.json())
+    .then(contents => {
+
+        const headers = document.querySelectorAll("#scoreTable thead th");
+
+        // ✅ 6 cột nội dung thi bắt đầu từ cột index 4 (sau Đơn vị)
+        for(let i=0; i<6; i++){
+            headers[i+4].innerText = contents[i];
+        }
+    });
+}
+
+async function submitScore(){
+
+    const name = document.getElementById("signatureName").value.trim();
+    const mode = document.getElementById("signatureMode").value;
+
+    if(!name){
+        alert("Vui lòng nhập họ tên ký xác nhận");
+        return;
+    }
+
+    let signatureData = null;
+
+    if(mode === "draw"){
+        signatureData = canvas.toDataURL();
+
+        const blank = document.createElement("canvas");
+        blank.width = canvas.width;
+        blank.height = canvas.height;
+
+        if(signatureData === blank.toDataURL()){
+            alert("Vui lòng ký tên trước khi gửi điểm");
             return;
         }
+    }
+    else{
+        if(!uploadedSignature){
+            alert("Vui lòng tải ảnh chữ ký");
+            return;
+        }
+        signatureData = uploadedSignature;
+    }
 
-        alert("Đổi mật khẩu thành công. Đang đăng nhập lại...");
+    const exam = document.getElementById("examSelect").value;
+    const belt = document.getElementById("beltSelect").value;
+    const rows = document.querySelectorAll("#scoreTable tbody tr");
 
-        // 🔥 LOGIN LẠI NGAY
-        fetch("/api/login", {
-            method: "POST",
-            body: JSON.stringify({
-                user: currentUser,
-                password: newPassword
-            })
-        })
-        .then(r => r.json())
-        .then(loginRes => {
-            if (!loginRes.ok) {
-                alert("Đăng nhập lại thất bại, vui lòng login thủ công");
-                location.reload();
-                return;
-            }
+    if(!exam){
+        alert("Chưa chọn khóa thi");
+        return;
+    }
 
-            // ✅ lúc này must_change_pw = false
-            closePasswordPopup();
-            onLoginSuccess(loginRes);   // hàm bạn đang dùng khi login thành công
+    // ============================
+    // 🔥 TẠO BATCH PAYLOAD
+    // ============================
+
+    const batchId = crypto.randomUUID
+        ? crypto.randomUUID()
+        : Date.now() + "_" + Math.random();
+
+    const rowsData = [];
+
+    rows.forEach(row => {
+
+        const candidate_id = row.getAttribute("data-id");
+        const inputs = row.querySelectorAll("input");
+
+        const scores = Array.from(inputs).map(i => {
+            let raw = i.value.trim().replace(",", ".");
+            const val = parseFloat(raw);
+            return isNaN(val) ? 0 : val;
+        });
+
+        rowsData.push({
+            client_txn_id: crypto.randomUUID(),
+            candidate_id,
+            scores
         });
     });
-}
 
-function xoaDB(id){
-  if (!confirm("Xóa lỗi này? Không thể hoàn tác.")) return;
+    const payload = {
+        batch_id: batchId,
+        exam,
+        belt,
+        signature_name: name,
+        signature_image: signatureData,
+        rows: rowsData
+    };
 
-  const user = sessionStorage.getItem("GT_LOGIN_USER");
-  if (!user) {
-    alert("⚠️ Chưa đăng nhập");
-    return;
-  }
+    const historyId = batchId;
 
-  fetch(API_ROOT + "/api/xoa", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-User": encodeURIComponent(user)   // ✅ FIX 100%
-    },
-    body: JSON.stringify({ id })
-  })
-  .then(r => r.json())
-  .then(res => {
-    if (!res.ok) throw res.error;
-    alert("🗑️ Đã xóa");
-    veBang();
-  })
-  .catch(err => {
-    alert("❌ Không xóa được: " + err);
-  });
-}
-
-
-
-function guiLaiDB(id){
-  fetch(API_ROOT + "/api/one?id=" + id)
-    .then(r => r.json())
-    .then(data => {
-      // fill lại form
-      ngay.value     = data.ngay;
-      lop.value      = data.lop;
-      ho_ten.value   = data.ho_ten;
-      vi_pham.value = data.vi_pham;
-      thoi_gian.value = data.thoi_gian;
-      capNhatNguoiXuLy();
-
-      openTab(0); // quay về tab Gửi lỗi
-      alert("✏️ Đã nạp dữ liệu, kiểm tra lại rồi bấm Gửi");
+    addHistory({
+        id: historyId,
+        time: new Date().toISOString(),
+        exam: exam,
+        belt: belt,
+        status: "SENDING"
     });
+
+    renderHistory();
+
+    try{
+
+        await sendBatch(payload);
+
+        updateHistory(historyId, { status: "SENT" });
+        renderHistory();
+
+        const judge = localStorage.getItem("judge");
+        const key = `draft_${judge}_${exam}_${belt}`;
+        localStorage.removeItem(key);
+
+        loadCandidates();
+        alert("Đã lưu điểm & ký xác nhận thành công");
+
+        openTab("print");
+        loadPrintPdf();
+
+    }catch(error){
+
+        console.error(error);
+
+        saveToQueue(payload);   // 🔥 LƯU OFFLINE QUEUE
+
+        updateHistory(historyId, { status: "FAILED" });
+        renderHistory();
+
+        alert("Server offline. Đã lưu vào hàng chờ.");
+    }
 }
 
-function guiLai(i){
-  const d = getData();
-  const item = { ...d[i] };
+async function sendBatch(payload) {
 
-  delete item.stt;
-  delete item.sent;
+    for (let item of payload.rows) {
 
-  const ok = confirm(
-    "Xác nhận gửi lại lỗi này?\n\n" +
-    `Học sinh: ${item.ho_ten}\n` +
-    `Lớp: ${item.lop}\n` +
-    `Vi phạm: ${item.vi_pham}`
-  );
-  if (!ok) return;
+        const res = await fetch(`${API_BASE}/save_score`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                client_txn_id: item.client_txn_id,
+                candidate_id: item.candidate_id,
+                exam: payload.exam,
+                scores: item.scores
+            })
+        });
 
-  status.textContent = "⏳ Đang gửi lại dữ liệu...";
-  status.className   = "status wait";
+        if (!res.ok) throw new Error("Score failed");
+    }
 
-  const fd = new FormData();
-  fd.append("data", JSON.stringify(item));
-
-  fetch(API, {
-    method: "POST",
-    body: fd
-  })
-  .then(r => r.json())
-  .then(res => {
-    if (!res.ok) throw res.error;
-
-    item.sent = true;
-    item.stt  = res.stt;
-    item.ngay = res.ngay;
-
-    const ds = getData();
-    ds[i] = item;
-    saveData(ds);
-
-    veBang();
-
-    status.textContent =
-      `✅ Gửi lại thành công – STT ${res.stt} (${res.ngay})`;
-    status.className = "status ok";
-  })
-  .catch(err => {
-    console.error(err);
-    status.textContent =
-      "⚠️ Server chưa sẵn sàng – đã lưu tạm";
-    status.className = "status err";
-  });
-}
-
-
-function guiSuaThucTe() {
-  const fd = new FormData();
-  fd.append("id", SUA_ID);
-  fd.append("ngay", document.getElementById("sua_ngay").value);
-  fd.append("lop", document.getElementById("sua_lop").value);
-  fd.append("ho_ten", document.getElementById("sua_ho_ten").value);
-  fd.append("thoi_gian", document.getElementById("sua_thoi_gian").value);
-  fd.append("loai", document.getElementById("sua_loai").value);
-  fd.append("vi_pham", document.getElementById("sua_vi_pham").value);
-  fd.append("mo_ta", document.getElementById("sua_mo_ta").value);
-  fd.append("hinh_thuc", document.getElementById("sua_hinh_thuc").value);
-  fd.append("diem_tru", document.getElementById("sua_diem_tru").value);
-
-  fetch(API.replace("/send", "") + "/api/update", {
-    method: "POST",
-    body: fd
-  })
-    .then(r => r.json())
-    .then(res => {
-      if (res.ok) {
-        alert("✅ Đã sửa thành công");
-        document.getElementById("popupSua").style.display = "none";
-        veBang();
-      } else {
-        alert("❌ Lỗi khi sửa: " + res.error);
-      }
-    })
-    .catch(() => {
-      alert("❌ Không thể kết nối máy chủ");
+    const sigRes = await fetch(`${API_BASE}/save_signature`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            exam: payload.exam,
+            belt: payload.belt,
+            signature_name: payload.signature_name,
+            signature_image: payload.signature_image
+        })
     });
+
+    if (!sigRes.ok) throw new Error("Signature failed");
 }
 
-function xoa(i){
-  if (!confirm("Xóa dòng lỗi này khỏi lịch sử?")) return;
+function loadCandidates(){
 
-  const d = getData();
-  d.splice(i, 1);
-  saveData(d);
-  veBang();
-
-  status.textContent = "🗑️ Đã xóa dòng lỗi khỏi lịch sử";
-  status.className   = "status ok";
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  napLoai();
-  loadPrefs?.();
-  napUserDangNhap();
-
-  const u = sessionStorage.getItem("GT_LOGIN_USER");
-
-  if (!u) {
-    document.getElementById("loginBox").style.display = "flex";
-  } else {
-    document.getElementById("loginBox").style.display = "none";
-    capNhatNguoiXuLy();
-  }
-});
-
-
-
-
-let ALL_DATA = [];
-function loadAllLoi() {
-  const tb = document.getElementById("all_loi");
-  tb.innerHTML = "<tr><td colspan='11'>⏳ Đang tải dữ liệu...</td></tr>";
-
-  const API_ROOT = API.replace("/send", "");
-  const API_ALL  = API_ROOT + "/api/all";
-
-  fetch(API_ALL)
-    .then(r => r.json())
-    .then(ds => {
-
-      if (!Array.isArray(ds) || ds.length === 0) {
-        tb.innerHTML = "<tr><td colspan='11'>Không có dữ liệu</td></tr>";
+    const exam = document.getElementById("examSelect").value;
+    const belt = document.getElementById("beltSelect").value;
+    if(!examConfirmed){
+        alert("VUI LÒNG XÁC NHẬN KHÓA THI");
         return;
-      }
+    }
+    if(!exam || !belt) return;
 
-      // ===== 🔥 CỐT LÕI CHO BỘ LỌC =====
-      ALL_DATA = ds;        // 1️⃣ giữ dữ liệu gốc
-      napBoLoc(ds);         // 2️⃣ nạp option cho bộ lọc
-      apDungBoLoc();        // 3️⃣ vẽ bảng theo filter hiện tại
+    fetch(`${API_BASE}/candidates?exam=${encodeURIComponent(exam)}&belt=${encodeURIComponent(belt)}`)
+    .then(res => res.json())
+    .then(data => {
+
+        const tbody = document.querySelector("#scoreTable tbody");
+        tbody.innerHTML = "";
+
+        data.forEach((c, index) => {
+
+            const row = `
+                <tr data-id="${c.id}">
+                    <td>${index + 1}</td>
+                    <td>${c.name}</td>
+                    <td>${c.birth_year}</td>
+                    <td>${c.unit ?? ""}</td>
+
+                    ${c.scores.map(s => `
+                        <td>
+                        <input
+                            type="text"
+                            inputmode="decimal"
+                            pattern="[0-9]*[.,]?[0-9]*"
+                            autocomplete="off"
+                            autocapitalize="off"
+                            spellcheck="false"
+                            value="${s ?? ''}"
+                        >
+                        </td>
+                    `).join("")}
+
+                    <td class="total-cell"><b>${c.total ? c.total : ""}</b></td>
+                    <td>${c.rank ? c.rank : ""}</td>
+                    <td>${c.result ? c.result : ""}</td>
+                </tr>
+            `;
+
+            tbody.innerHTML += row;
+        });
+        restoreDraft();
+        // ===============================
+        // 🔥 VALIDATE + REALTIME TOTAL
+        // ===============================
+
+        const rows = document.querySelectorAll("#scoreTable tbody tr");
+
+        rows.forEach(row => {
+
+            const inputs = row.querySelectorAll("input");
+            const totalCell = row.querySelector(".total-cell");
+
+            inputs.forEach(input => {
+
+                // CHẶN KÝ TỰ KHÔNG HỢP LỆ
+                input.addEventListener("input", function(){
+
+                    let val = this.value;
+
+                    // chỉ cho số + . + ,
+                    val = val.replace(/[^0-9.,]/g, "");
+
+                    // đổi , thành .
+                    val = val.replace(",", ".");
+
+                    this.value = val;
+
+                    calculateTotal();
+                    saveDraft();
+                });
+
+                // CHUẨN HÓA & GIỚI HẠN
+                input.addEventListener("blur", function(){
+
+                    let val = parseFloat(this.value.replace(",", "."));
+
+                    if(isNaN(val)){
+                        this.value = "";
+                        calculateTotal();
+                        return;
+                    }
+
+                    if(val < 0) val = 0;
+                    if(val > 10) val = 10;
+
+                    this.value = val.toFixed(1);
+
+                    calculateTotal();
+                    saveDraft();
+                });
+
+            });
+
+            function calculateTotal(){
+
+                let sum = 0;
+
+                inputs.forEach(i=>{
+                    let v = parseFloat(i.value);
+                    if(!isNaN(v)) sum += v;
+                });
+
+                totalCell.innerHTML = "<b>" + sum.toFixed(1) + "</b>";
+            }
+
+        });
 
     })
     .catch(err => {
-      console.error(err);
-      tb.innerHTML =
-        "<tr><td colspan='11'>❌ Không kết nối được máy chủ</td></tr>";
+        console.error(err);
+        alert("Không load được danh sách thí sinh");
     });
 }
 
-// ====== LƯU/NẠP TỰ ĐỘNG: KHỐI + NGÀY + NGƯỜI ======
-const KEY_PREFS = "GT_PREFS_V2";
+// ===================
+// EVENT
+// ===================
+document.getElementById("examSelect")
+.addEventListener("change", function(){
+    const exam = this.value;
 
-function savePrefs() {
-  const prefs = {
-    khoi: document.getElementById("khoi")?.value || "",
-    ngay: document.getElementById("ngay")?.value || "",
-    diem_tru: document.getElementById("diem_tru")?.value || "1"
-  };
-  localStorage.setItem(KEY_PREFS, JSON.stringify(prefs));
-}
+    document.getElementById("welcomeBox").innerHTML =
+        "Đã chọn khóa thi: <b>" + exam + "</b>";
 
-function loadPrefs() {
-  let prefs = {};
-  try {
-    prefs = JSON.parse(localStorage.getItem(KEY_PREFS) || "{}");
-  } catch {}
-
-  // ===== KHỐI =====
-  const khoiEl = document.getElementById("khoi");
-  if (khoiEl && prefs.khoi) {
-    khoiEl.value = prefs.khoi;
-    // kích hoạt nạp lớp theo khối
-    khoiEl.dispatchEvent(new Event("change"));
-  }
-
-  // ===== NGÀY =====
-  const ngayEl = document.getElementById("ngay");
-  if (ngayEl) {
-    ngayEl.value = prefs.ngay || new Date().toISOString().slice(0, 10);
-  }
-  if (ngayEl) {
-    ngayEl.value = prefs.ngay || new Date().toISOString().slice(0, 10);
-    capNhatNgayHienThi(); // 🔥 BẮT BUỘC GỌI
-  }
-
-  // ===== Điểm trừ ====
-  const diemTruEl = document.getElementById("diem_tru");
-if (diemTruEl && prefs.diem_tru) {
-  diemTruEl.value = prefs.diem_tru;
-}
-}
-
-function napBoLoc(ds) {
-  const fNgay  = document.getElementById("f_ngay");
-  const fLop   = document.getElementById("f_lop");
-  const fVP    = document.getElementById("f_vipham");
-  const fNguoi = document.getElementById("f_nguoi");
-
-  fNgay.innerHTML  = `<option value="">Tất cả ngày</option>`;
-  fLop.innerHTML   = `<option value="">Tất cả lớp</option>`;
-  fVP.innerHTML    = `<option value="">Tất cả vi phạm</option>`;
-  fNguoi.innerHTML = `<option value="">Tất cả người xử lý</option>`;
-
-  const uniq = arr => [...new Set(arr.filter(v => v))];
-
-  uniq(ds.map(i => i.ngay)).forEach(v => fNgay.innerHTML += `<option>${v}</option>`);
-  uniq(ds.map(i => i.lop)).forEach(v => fLop.innerHTML += `<option>${v}</option>`);
-  uniq(ds.map(i => i.vi_pham)).forEach(v => fVP.innerHTML += `<option>${v}</option>`);
-  uniq(ds.map(i => i.nguoi)).forEach(v => fNguoi.innerHTML += `<option>${v}</option>`);
-}
+    loadBelts();
+});
 
 
-function apDungBoLoc() {
-  const tb = document.getElementById("all_loi");
-  tb.innerHTML = "";
+document.getElementById("beltSelect")
+.addEventListener("change", function(){
+    loadExamHeaders();
+    loadCandidates();
+});
 
-  const fNgay  = document.getElementById("f_ngay").value;
-  const fLop   = document.getElementById("f_lop").value;
-  const fVP    = document.getElementById("f_vipham").value;
-  const fNguoi = document.getElementById("f_nguoi").value;
-  const fHS    = document.getElementById("f_hocsinh").value.toLowerCase();
 
-  const API_ROOT = API.replace("/send", "");
+// ===================
+// LOGIN
+// ===================
+async function login(){
+  const judge = document.getElementById("loginJudge").value;
+  const pass  = document.getElementById("loginPassword").value;
 
-  ALL_DATA
-    .filter(i =>
-      (!fNgay  || i.ngay === fNgay) &&
-      (!fLop   || i.lop === fLop) &&
-      (!fVP    || i.vi_pham === fVP) &&
-      (!fNguoi || i.nguoi === fNguoi) &&
-      (!fHS    || (i.hoc_sinh || "").toLowerCase().includes(fHS))
-    )
-    .slice()      // ✅ tránh làm thay đổi ALL_DATA gốc
-    .reverse()    // ✅ nhập sau → hiển thị trước
-    .forEach(i => {
-
-      const soLan = Number(i.so_lan ?? 1);
-      const capDo = String(i.cap_do || "");
-      let rowClass = "";
-      if (soLan >= 3 || capDo.includes("3")) rowClass = "muc-3";
-      else if (soLan === 2 || capDo.includes("2")) rowClass = "muc-2";
-
-      let imgHtml = "";
-      if (i.anh) {
-        const imgUrl = API_ROOT + "/api/anh?path=" + encodeURIComponent(i.anh);
-        imgHtml = `<img src="${imgUrl}" class="img-preview">`;
-      }
-
-      tb.innerHTML += `
-        <tr class="${rowClass}">
-          <td>${formatNgayDDMMYYYY(i.ngay)}</td>
-          <td>${i.lop || ""}</td>
-          <td>${i.hoc_sinh || ""}</td>
-          <td>${i.thoi_gian || ""}</td>
-          <td>${i.loai || ""}</td>
-          <td>${i.vi_pham || ""}</td>
-          <td>${i.mo_ta || ""}</td>
-          <td>${i.cap_do || ""}</td>
-          <td style="text-align:center">${soLan}</td>
-          <td style="text-align:center">${i.diem_tru ?? 0}</td>
-          <td>${i.nguoi || ""}</td>
-          <td style="text-align:center">${imgHtml}</td>
-        </tr>
-      `;
+  try{
+    const res = await fetch(API_BASE + "/login", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ name: judge, password: pass })
     });
 
-  if (!tb.innerHTML) {
-    tb.innerHTML = `<tr><td colspan="12">Không có dữ liệu phù hợp</td></tr>`;
-  }
-}
-
-
-
-function guiPM() {
-  const fd = new FormData();
-
-  fd.append("lop", document.getElementById("lop").value);
-  fd.append("ho_ten", document.getElementById("ho_ten").value);
-  fd.append("noi_dung", document.getElementById("noi_dung").value);
-
-  const fileInput = document.getElementById("anh_pm");
-  if (fileInput.files.length > 0) {
-    fd.append("anh", fileInput.files[0]);
-  }
-
-  fetch("/gui_pm", {
-    method: "POST",
-    body: fd           // ✅ KHÔNG headers
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.ok) {
-      alert("Đã gửi PM");
-    } else {
-      alert("Lỗi: " + data.error);
-    }
-  })
-  .catch(err => {
-    alert("Không kết nối được máy chủ");
-    console.error(err);
-  });
-}
-
-function toggleMatKhau(cb, inputId) {
-  const inp = document.getElementById(inputId);
-  inp.type = cb.checked ? "text" : "password";
-}
-
-function formatNgayDDMMYYYY(isoDate) {
-  if (!isoDate) return "";
-  const p = isoDate.split("-");
-  if (p.length !== 3) return isoDate;
-  return `${p[2]}-${p[1]}-${p[0]}`; // DD-MM-YYYY
-}
-
-// ================= TỰ ĐỘNG TÍNH SỐ LẦN VI PHẠM =================
-
-// lấy cấp độ gốc từ QUY_DINH_VI_PHAM
-function layCapDoGoc() {
-  const loai = document.getElementById("loai").value;
-  const vp   = document.getElementById("vi_pham").value;
-  const f = QUY_DINH_VI_PHAM.find(v => v.loai === loai && v.vipham === vp);
-  const so = parseInt((f?.capdo || "1").match(/\d+/));
-  return isNaN(so) ? 1 : so;
-}
-
-function tinhCapDoMoi(capGoc, soLan) {
-  return Math.min(3, capGoc + (soLan - 1));
-}
-
-let timerSoLan = null;
-
-function capNhatSoLan() {
-  clearTimeout(timerSoLan);
-
-  timerSoLan = setTimeout(() => {
-    const lop     = document.getElementById("lop").value;
-    const hoTen   = document.getElementById("ho_ten").value;
-    const viPham  = document.getElementById("vi_pham").value;
-
-    const soLanEl = document.getElementById("so_lan");
-    const capDoEl = document.getElementById("cap_do");
-
-    // chưa đủ dữ liệu → reset an toàn
-    if (!lop || !hoTen || !viPham) {
-      soLanEl.value = "1";
+    // Nếu server trả không phải 2xx
+    if(!res.ok){
+      const txt = await res.text();
+      alert("Login lỗi HTTP " + res.status + "\n" + txt.slice(0,200));
       return;
     }
 
-    const API_ROOT = API.replace("/send", "");
-    const url =
-      API_ROOT +
-      "/api/so_lan?lop=" + encodeURIComponent(lop) +
-      "&ho_ten=" + encodeURIComponent(hoTen) +
-      "&vi_pham=" + encodeURIComponent(viPham);
+    const data = await res.json();
 
-    fetch(url)
-      .then(r => r.json())
-      .then(res => {
-        const soLan = Number(res.so_lan || 1);
-        soLanEl.value = soLan;
+    if(data.status !== "success"){
+      alert(data.message || "Login fail");
+      return;
+    }
 
-        const capGoc = layCapDoGoc();
-        capDoEl.value = "Mức độ " + tinhCapDoMoi(capGoc, soLan);
-      })
-      .catch(() => {
-        soLanEl.value = "1";
-      });
-  }, 200);
+    if(data.must_change === 1){
+      showChangePasswordPopup(judge);
+      return;
+    }
+
+    localStorage.setItem("judge", judge);
+    document.getElementById("loginPage").style.display="none";
+    document.getElementById("dashboard").style.display="block";
+    document.getElementById("judgeName").innerText = judge;
+
+    loadExams();
+    renderHistory();
+
+  }catch(err){
+    console.error(err);
+    alert("Không gọi được API login.\n" + (err?.message || err));
+  }
 }
 
-// gắn sự kiện
-["ngay", "lop", "ho_ten", "loai", "vi_pham"].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener("change", capNhatSoLan);
-});
+function showChangePasswordPopup(name){
 
-["f_ngay", "f_lop", "f_vipham", "f_nguoi"].forEach(id => {
-  document.getElementById(id).addEventListener("change", apDungBoLoc);
-});
+    while(true){
 
-document.getElementById("f_hocsinh").addEventListener("input", apDungBoLoc);
+        const newPass = prompt("Bạn đang dùng mật khẩu mặc định.\nNhập mật khẩu mới:");
 
-function doiMatKhau() {
-  const old_pw  = document.getElementById("old_pw").value;
-  const new_pw  = document.getElementById("new_pw").value;
-  const new_pw2 = document.getElementById("new_pw2").value;
+        if(!newPass){
+            alert("Bắt buộc phải đổi mật khẩu!");
+            continue;   // quay lại nhập lại lần 1
+        }
 
-  if (!old_pw || !new_pw || !new_pw2) {
-    alert("Vui lòng nhập đầy đủ thông tin");
-    return;
-  }
+        if(newPass.length < 6){
+            alert("Mật khẩu phải tối thiểu 6 ký tự");
+            continue;
+        }
 
-  if (new_pw !== new_pw2) {
-    alert("Mật khẩu mới không khớp");
-    return;
-  }
+        const confirmPass = prompt("Nhập lại mật khẩu mới:");
 
-  const user = sessionStorage.getItem("GT_LOGIN_USER");
-  if (!user) {
-    alert("Phiên đăng nhập đã hết, vui lòng đăng nhập lại");
+        if(newPass !== confirmPass){
+            alert("Mật khẩu nhập lại không khớp! Vui lòng nhập lại từ đầu.");
+            continue;   // quay lại nhập lại lần 1
+        }
+
+        // Nếu đến đây nghĩa là hợp lệ
+        fetch(API_BASE + "/change_password", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                name:name,
+                new_password:newPass
+            })
+        })
+        .then(()=> {
+            alert("Đổi mật khẩu thành công. Vui lòng đăng nhập lại.");
+            location.reload();
+        });
+
+        break; // thoát vòng lặp
+    }
+}
+
+// ===================
+// LOGOUT
+// ===================
+function logout(){
+    localStorage.clear();
     location.reload();
-    return;
-  }
+}
 
-  fetch(API_ROOT + "/api/change_password", {
-    method: "POST",
-    body: JSON.stringify({
-      username: user,
-      old_password: old_pw,
-      new_password: new_pw
+function openTab(tabName){
+
+    if ((tabName === "score" || tabName === "print") && !examConfirmed) {
+        alert("VUI LÒNG XÁC NHẬN KHÓA THI");
+        return;
+    }
+
+    const tabs = document.querySelectorAll(".tab-content");
+    tabs.forEach(tab => {
+        tab.classList.remove("tab-active");
+    });
+
+    document.getElementById(tabName)
+        .classList.add("tab-active");
+    // ✅ thêm dòng này
+    if (tabName === "history") renderHistory();
+}
+
+function confirmExam(){
+
+    const exam = document.getElementById("examSelect").value;
+    const judge = localStorage.getItem("judge");
+
+    if(!exam){
+        alert("Vui lòng chọn khóa thi");
+        return;
+    }
+
+    examConfirmed = true;
+
+    let role = "Giám khảo";
+    if(judge && judge.toLowerCase() === "admin"){
+        role = "Chánh Chủ khảo";
+    }
+
+    document.getElementById("welcomeBox").innerHTML =
+        `Bạn đã được phân công làm <b>${role}</b> của khóa thi: <b>${exam}</b>`;
+}
+
+function resetPassword(){
+
+    const judge = document.getElementById("loginJudge").value;
+
+    if(!judge){
+        alert("Vui lòng chọn giám khảo");
+        return;
+    }
+
+    fetch(API_BASE + "/request_reset", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ name: judge })
     })
-  })
-  .then(r => r.json())
-  .then(res => {
-    if (!res.ok) throw res.msg;
-
-    alert("✅ Đổi mật khẩu thành công. Vui lòng đăng nhập lại.");
-    sessionStorage.clear();
-    location.reload();
-  })
-  .catch(err => {
-    alert("❌ " + err);
-  });
-}
-
-</script>
-
-<!-- ✅ POPUP SỬA ĐẦY ĐỦ GIỐNG HỆT TAB GỬI LỖI -->
-<div id="popupSua" style="
-  display: none;
-  position: fixed;
-  z-index: 9999;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: #0008;
-  align-items: center;
-  justify-content: center;
-  overflow: auto;
-">
-  <div style="
-    background: white;
-    padding: 20px;
-    width: 98%;
-    max-width: 520px;
-    max-height: 95%;
-    overflow-y: auto;
-    border-radius: 8px;
-    margin: 30px auto;
-  ">
-    <h3>✏️ Sửa lỗi đã ghi</h3>
-
-    <label>Ngày</label>
-    <input id="sua_ngay" type="date">
-
-    <label>Khối</label>
-    <select id="sua_khoi" onchange="capNhatLopSua()"></select>
-
-    <label>Lớp</label>
-    <select id="sua_lop" onchange="capNhatHocSinhSua()"></select>
-
-    <label>Họ tên học sinh</label>
-    <select id="sua_ho_ten"></select>
-
-    <label>Khung giờ</label>
-    <select id="sua_thoi_gian"></select>
-
-    <label>Loại lỗi</label>
-    <select id="sua_loai" onchange="capNhatViPhamSua()"></select>
-
-    <label>Vi phạm</label>
-    <select id="sua_vi_pham"></select>
-
-    <label>Mô tả chi tiết</label>
-    <textarea id="sua_mo_ta" rows="3"></textarea>
-
-    <label>Hình thức xử lý</label>
-    <input id="sua_hinh_thuc">
-
-    <label>Điểm trừ</label>
-    <input id="sua_diem_tru" type="number" min="0">
-
-    <div style="margin-top:10px">
-      <button onclick="guiSuaThucTe()">💾 LƯU SỬA</button>
-      <button onclick="dongDeXuat()" style="background:#ccc">Hủy</button>
-    </div>
-  </div>
-</div>
-
-<script>
-function capNhatKhoiSua() {
-const sel = document.getElementById("sua_lop");
-const lopList = [...new Set(HOC_SINH.filter(h => h.khoi === khoi).map(h => h.lop))];
-sel.innerHTML = lopList.map(l => `<option>${l}</option>`).join("");
-capNhatHocSinhSua();
-}
-
-
-function capNhatHocSinhSua() {
-const lop = document.getElementById("sua_lop").value;
-const hs = HOC_SINH.filter(h => h.lop === lop);
-const sel = document.getElementById("sua_ho_ten");
-sel.innerHTML = hs.map(h => `<option>${h.ten}</option>`).join("");
-}
-
-
-function capNhatKhungGioSua() {
-const sel = document.getElementById("sua_thoi_gian");
-sel.innerHTML = KHUNG_GIO.map(k => `<option>${k}</option>`).join("");
-}
-
-
-function capNhatLoaiVaViPhamSua() {
-const sel = document.getElementById("sua_loai");
-sel.innerHTML = Object.keys(QUY_DINH_RAW).map(loai => `<option>${loai}</option>`).join("");
-capNhatViPhamSua();
-}
-
-
-function capNhatViPhamSua() {
-const loai = document.getElementById("sua_loai").value;
-const vp = QUY_DINH_RAW[loai] || [];
-const sel = document.getElementById("sua_vi_pham");
-sel.innerHTML = vp.map(v => `<option>${v.noi_dung}</option>`).join("");
-}
-
-
-function suaTrucTiepDB(id) {
-  SUA_ID = id;
-
-  fetch(API.replace("/send", "") + "/api/one?id=" + id)
-    .then(r => r.json())
-    .then(data => {
-      if (!data || !data.id) return alert("Không tìm thấy dữ liệu");
-
-      // Cập nhật thông tin sửa
-      document.getElementById("sua_ngay").value = data.ngay;
-      document.getElementById("sua_lop").value = data.lop;
-      document.getElementById("sua_ho_ten").value = data.ho_ten;
-      document.getElementById("sua_thoi_gian").value = data.thoi_gian;
-      document.getElementById("sua_loai").value = data.loai;
-      document.getElementById("sua_vi_pham").value = data.vi_pham;
-      document.getElementById("sua_mo_ta").value = data.mo_ta;
-      document.getElementById("sua_hinh_thuc").value = data.hinh_thuc;
-      document.getElementById("sua_diem_tru").value = data.diem_tru;
-
-      // Mở popup sửa lỗi
-      document.getElementById("popupSua").style.display = "flex";
-    })
-    .catch(() => {
-      alert("Không thể tải dữ liệu để sửa");
-
-      // Lưu vào hàng đợi lỗi chưa gửi
-      addPending({
-        localId: "LOCAL_" + Date.now(),
-        status: "pending",
-        nguoi: sessionStorage.getItem("GT_LOGIN_USER"),
-        ngay: document.getElementById("sua_ngay").value,
-        lop: document.getElementById("sua_lop").value,
-        ho_ten: document.getElementById("sua_ho_ten").value,
-        thoi_gian: document.getElementById("sua_thoi_gian").value,
-        loai: document.getElementById("sua_loai").value,
-        vi_pham: document.getElementById("sua_vi_pham").value,
-        mo_ta: document.getElementById("sua_mo_ta").value,
-        hinh_thuc: document.getElementById("sua_hinh_thuc").value,
-        diem_tru: document.getElementById("sua_diem_tru").value
-      });
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.status === "success"){
+            alert("Yêu cầu reset mật khẩu đã gửi tới Ban tổ chức.\nVui lòng chờ phê duyệt.");
+        }
     });
 }
 
-capNhatKhoiSua();
-capNhatKhungGioSua();
-capNhatLoaiVaViPhamSua();
+function saveDraft(){
+    const exam = document.getElementById("examSelect").value;
+    const belt = document.getElementById("beltSelect").value;
 
+    if(!exam || !belt) return;
 
-document.getElementById("sua_ngay").value = data.ngay;
-document.getElementById("sua_khoi").value = LOP_KHOI[data.lop];
-capNhatLopSua();
-const LOP_KHOI = {};
-Object.keys(DS_LOP_HOC_SINH).forEach(lop => {
-  if (/^[6-9]/.test(lop)) LOP_KHOI[lop] = "THCS";
-  else if (/^(10|11|12)/.test(lop)) LOP_KHOI[lop] = "THPT";
+    const rows = document.querySelectorAll("#scoreTable tbody tr");
+
+    const draft = [];
+
+    rows.forEach(row=>{
+        const id = row.getAttribute("data-id");
+        const inputs = row.querySelectorAll("input");
+
+        const scores = Array.from(inputs).map(i=>i.value);
+
+        draft.push({
+            candidate_id: id,
+            scores: scores
+        });
+    });
+
+    const judge = localStorage.getItem("judge");
+    const key = `draft_${judge}_${exam}_${belt}`;
+    localStorage.setItem(key, JSON.stringify(draft));
+}
+
+function restoreDraft(){
+
+    const exam = document.getElementById("examSelect").value;
+    const belt = document.getElementById("beltSelect").value;
+
+    const judge = localStorage.getItem("judge");
+    const key = `draft_${judge}_${exam}_${belt}`;
+    const draft = localStorage.getItem(key);
+
+    if(!draft) return;
+
+    const data = JSON.parse(draft);
+
+    data.forEach(item=>{
+        const row = document.querySelector(
+            `#scoreTable tbody tr[data-id="${item.candidate_id}"]`
+        );
+
+        if(!row) return;
+
+        const inputs = row.querySelectorAll("input");
+
+        item.scores.forEach((val, index)=>{
+            if(inputs[index]){
+                inputs[index].value = val;
+            }
+        });
+
+        // Tính lại tổng
+        let sum = 0;
+        inputs.forEach(i=>{
+            let v = parseFloat(i.value);
+            if(!isNaN(v)) sum += v;
+        });
+
+        row.querySelector(".total-cell").innerHTML =
+            "<b>" + sum.toFixed(1) + "</b>";
+    });
+}
+
+function switchSignatureMode(){
+    const mode = document.getElementById("signatureMode").value;
+
+    document.getElementById("drawArea").style.display =
+        mode === "draw" ? "block" : "none";
+
+    document.getElementById("uploadArea").style.display =
+        mode === "upload" ? "block" : "none";
+}
+
+const canvas = document.getElementById("signatureCanvas");
+const ctx = canvas.getContext("2d");
+
+let drawing = false;
+
+canvas.addEventListener("mousedown", ()=> drawing = true);
+canvas.addEventListener("mouseup", ()=> {
+    drawing = false;
+    ctx.beginPath();
+});
+canvas.addEventListener("mousemove", draw);
+canvas.addEventListener("touchstart", e => {
+    drawing = true;
 });
 
-document.getElementById("sua_lop").value = data.lop;
-capNhatHocSinhSua();
-document.getElementById("sua_ho_ten").value = data.ho_ten;
-document.getElementById("sua_thoi_gian").value = data.thoi_gian;
-document.getElementById("sua_loai").value = data.loai;
-capNhatViPhamSua();
-document.getElementById("sua_vi_pham").value = data.vi_pham;
-document.getElementById("sua_mo_ta").value = data.mo_ta;
-document.getElementById("sua_hinh_thuc").value = data.hinh_thuc;
-document.getElementById("sua_diem_tru").value = data.diem_tru;
+canvas.addEventListener("touchend", e => {
+    drawing = false;
+    ctx.beginPath();
+});
+
+canvas.addEventListener("touchmove", function(e){
+    e.preventDefault();
+    if(!drawing) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#0033CC";   // Blue đậm
+
+    ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+});
 
 
-document.getElementById("popupSua").style.display = "flex";
-})
-.catch(() => alert("Không thể tải dữ liệu để sửa"));
+function draw(e){
+    if(!drawing) return;
+
+    const rect = canvas.getBoundingClientRect();
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#0033CC";   // Blue đậm
+
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
 }
 
-function suaTrucTiepDB(id) {
-  SUA_ID = id;
-
-  fetch(API.replace("/send", "") + "/api/one?id=" + id)
-    .then(r => r.json())
-    .then(data => {
-      if (!data || !data.id) return alert("Không tìm thấy dữ liệu");
-
-      capNhatKhoiSua();
-      capNhatKhungGioSua();
-      capNhatLoaiVaViPhamSua();
-
-      document.getElementById("sua_ngay").value = data.ngay;
-      document.getElementById("sua_khoi").value = LOP_KHOI[data.lop];
-      capNhatLopSua();
-      document.getElementById("sua_lop").value = data.lop;
-      capNhatHocSinhSua();
-      document.getElementById("sua_ho_ten").value = data.ho_ten;
-      document.getElementById("sua_thoi_gian").value = data.thoi_gian;
-      document.getElementById("sua_loai").value = data.loai;
-      capNhatViPhamSua();
-      document.getElementById("sua_vi_pham").value = data.vi_pham;
-      document.getElementById("sua_mo_ta").value = data.mo_ta;
-      document.getElementById("sua_hinh_thuc").value = data.hinh_thuc;
-      document.getElementById("sua_diem_tru").value = data.diem_tru;
-
-      document.getElementById("popupSua").style.display = "flex";
-    })
-    .catch(() => alert("Không thể tải dữ liệu để sửa"));
+function clearCanvas(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
+
+let uploadedSignature = null;
+
+document.getElementById("signatureUpload")
+.addEventListener("change", function(){
+
+    const file = this.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e){
+        uploadedSignature = e.target.result;
+        document.getElementById("previewBox").innerHTML =
+            `<img src="${uploadedSignature}" width="200">`;
+    };
+    reader.readAsDataURL(file);
+});
+
+// ===================
+// HISTORY (LOCAL)
+// ===================
+function getJudge() {
+  return localStorage.getItem("judge") || "UNKNOWN";
+}
+
+function historyKey() {
+  return `SEND_HISTORY::${getJudge()}`;
+}
+
+function loadHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(historyKey()) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(list) {
+  localStorage.setItem(historyKey(), JSON.stringify(list));
+}
+
+function addHistory(item) {
+  const list = loadHistory();
+  list.unshift(item); // mới nhất lên đầu
+  saveHistory(list);
+}
+
+function updateHistory(id, patch) {
+  const list = loadHistory();
+  const idx = list.findIndex(x => x.id === id);
+  if (idx >= 0) {
+    list[idx] = { ...list[idx], ...patch };
+    saveHistory(list);
+  }
+}
+
+function fmtTime(iso) {
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso || "";
+  }
+}
+
+function statusText(status) {
+  if (status === "SENT") return "Thành công";
+  if (status === "FAILED") return "Không thành công";
+  if (status === "SENDING") return "Đang gửi";
+  return status || "";
+}
+
+function statusColor(status) {
+  if (status === "SENT") return "green";
+  if (status === "FAILED") return "red";
+  if (status === "SENDING") return "orange";
+  return "";
+}
+
+function deleteHistoryItem(id) {
+  const list = loadHistory();
+  const item = list.find(x => x.id === id);
+
+  const label = item ? `${item.exam || ""} - ${item.belt || ""}`.trim() : "";
+  if (!confirm(`Xóa lịch sử lần gửi này?\n${label}`)) return;
+
+  const next = list.filter(x => x.id !== id);
+  saveHistory(next);
+  renderHistory();
+}
+
+function renderHistory() {
+  const tbody = document.getElementById("historyBody");
+  const statusEl = document.getElementById("historyStatus");
+  if (!tbody) return;
+
+  const list = loadHistory();
+  tbody.innerHTML = "";
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; opacity:.7;">Chưa có lịch sử</td></tr>`;
+    if (statusEl) statusEl.textContent = "";
+    return;
+  }
+
+  for (const it of list) {
+    const tr = document.createElement("tr");
+
+    const td1 = document.createElement("td");
+    td1.textContent = fmtTime(it.time);
+
+    const td2 = document.createElement("td");
+    td2.textContent = `${it.exam || ""} - ${it.belt || ""}`.trim();
+
+    const td3 = document.createElement("td");
+    td3.textContent = statusText(it.status);
+    const c = statusColor(it.status);
+    if (c) td3.style.color = c;
+    td3.style.fontWeight = "bold";
+
+    const td4 = document.createElement("td");
+    const delBtn = document.createElement("button");
+    delBtn.className = "btn-danger";
+    delBtn.textContent = "Xóa";
+    delBtn.onclick = () => deleteHistoryItem(it.id);
+    td4.appendChild(delBtn);
+
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    tr.appendChild(td4);
+
+    tbody.appendChild(tr);
+  }
+
+  if (statusEl) statusEl.textContent = `Tổng: ${list.length} lần`;
+}
+
+function clearHistory() {
+  if (!confirm("Xóa toàn bộ lịch sử trên máy này?")) return;
+  saveHistory([]);
+  renderHistory();
+}
+
+function loadPrintPdf() {
+  const exam = document.getElementById("examSelect").value;
+  const belt = document.getElementById("beltSelect").value;
+  if (!exam || !belt) {
+    alert("Chọn khóa thi và cấp đai trước");
+    return;
+  }
+
+  const organizer = ""; // nếu muốn truyền đơn vị tổ chức thì gán vào đây
+
+  const url =
+    `${API_BASE}/print_score_pdf?exam=${encodeURIComponent(exam)}&belt=${encodeURIComponent(belt)}&organizer=${encodeURIComponent(organizer)}&t=${Date.now()}`;
+
+  document.getElementById("pdfFrame").src = url;
+
+  const link = document.getElementById("pdfOpenLink");
+  link.href = url;
+  link.textContent = "Mở PDF ở tab mới";
+
+  document.getElementById("printHint").textContent = `${exam} - ${belt}`;
+}
+
+// ===============================
+// AUTO RETRY
+// ===============================
+
+setInterval(() => {
+
+    if (!offlineDB) return;
+
+    getAllQueue(async (items) => {
+
+        for (let item of items) {
+
+            try {
+                await sendBatch(item.data);
+
+                removeFromQueue(item.id);
+
+                // 🔥 cập nhật lại History
+                updateHistory(item.id, { status: "SENT" });
+                renderHistory();
+
+                console.log("Đã gửi lại thành công batch:", item.id);
+
+            } catch (err) {
+                console.log("Vẫn chưa gửi được:", item.id);
+            }
+
+        }
+
+    });
+
+}, 20000);
 </script>
 
-
-
-<div id="popupDoiMK"
-     style="display:none; position:fixed; inset:0;
-            background:rgba(0,0,0,0.6); z-index:99999;
-            align-items:center; justify-content:center;">
-  <div style="background:white; padding:15px; width:90%; max-width:360px; border-radius:6px;">
-    <h3>🔐 Đổi mật khẩu</h3>
-
-    <input type="password" id="old_pw" placeholder="Mật khẩu hiện tại"><br>
-
-    <input type="password" id="new_pw" placeholder="Mật khẩu mới">
-    <label style="font-size:13px; display:block; margin-bottom:6px;">
-      <input type="checkbox" onchange="toggleMatKhau(this, 'new_pw')">
-      Hiện mật khẩu mới
-    </label>
-
-    <input type="password" id="new_pw2" placeholder="Nhập lại mật khẩu mới">
-    <label style="font-size:13px; display:block; margin-bottom:10px;">
-      <input type="checkbox" onchange="toggleMatKhau(this, 'new_pw2')">
-      Hiện mật khẩu nhập lại
-    </label>
-
-    <button onclick="doiMatKhau()">Lưu</button>
-  </div>
-</div>
-<div id="popupQuenMK"
-     style="display:none; position:fixed; inset:0;
-            background:rgba(0,0,0,0.6); z-index:99999;
-            align-items:center; justify-content:center;">
-  <div style="background:white; padding:15px; width:90%; max-width:360px; border-radius:6px;">
-    <h3>❓ Quên mật khẩu</h3>
-
-    <label>Người xử lý</label>
-    <select id="quen_user"></select>
-
-    <label style="font-size:13px;">
-      Yêu cầu sẽ được gửi tới quản trị hệ thống để đặt lại mật khẩu.
-    </label>
-
-    <button onclick="guiYeuCauQuenMK()">Gửi yêu cầu</button>
-    <button onclick="dongQuenMK()" style="background:#999">Hủy</button>
-  </div>
-</div>
 
 </body>
 </html>
