@@ -1797,7 +1797,7 @@ function guiDeXuat() {
     formData.append("anh", file);
   }
 
-  fetch("/api/gui_de_xuat", {
+  fetch(API_ROOT + "/api/gui_de_xuat", {
     method: "POST",
     body: formData   // ✅ KHÔNG SET headers
   })
@@ -2409,7 +2409,7 @@ window.addEventListener("online", () => {
 
 
 function saveNewPassword() {
-    fetch("/api/change-password-first", {
+    fetch(API_ROOT + "/api/change-password-first", {
         method: "POST",
         body: JSON.stringify({
             username: currentUser,
@@ -2426,7 +2426,7 @@ function saveNewPassword() {
         alert("Đổi mật khẩu thành công. Đang đăng nhập lại...");
 
         // 🔥 LOGIN LẠI NGAY
-        fetch("/api/login", {
+        fetch(API_ROOT + "/api/login", {
             method: "POST",
             body: JSON.stringify({
                 user: currentUser,
@@ -2773,7 +2773,7 @@ function guiPM() {
     fd.append("anh", fileInput.files[0]);
   }
 
-  fetch("/gui_pm", {
+  fetch(API_ROOT + "/gui_pm", {
     method: "POST",
     body: fd           // ✅ KHÔNG headers
   })
@@ -2983,15 +2983,6 @@ sel.innerHTML = lopList.map(l => `<option>${l}</option>`).join("");
 capNhatHocSinhSua();
 }
 
-
-function capNhatHocSinhSua() {
-const lop = document.getElementById("sua_lop").value;
-const hs = HOC_SINH.filter(h => h.lop === lop);
-const sel = document.getElementById("sua_ho_ten");
-sel.innerHTML = hs.map(h => `<option>${h.ten}</option>`).join("");
-}
-
-
 function capNhatKhungGioSua() {
 const sel = document.getElementById("sua_thoi_gian");
 sel.innerHTML = KHUNG_GIO.map(k => `<option>${k}</option>`).join("");
@@ -3007,84 +2998,9 @@ capNhatViPhamSua();
 
 function capNhatViPhamSua() {
 const loai = document.getElementById("sua_loai").value;
-const vp = QUY_DINH_RAW[loai] || [];
+const vp = QUY_DINH_VI_PHAM.filter(v => v.loai === loai);
 const sel = document.getElementById("sua_vi_pham");
 sel.innerHTML = vp.map(v => `<option>${v.noi_dung}</option>`).join("");
-}
-
-
-function suaTrucTiepDB(id) {
-  SUA_ID = id;
-
-  fetch(API.replace("/send", "") + "/api/one?id=" + id)
-    .then(r => r.json())
-    .then(data => {
-      if (!data || !data.id) return alert("Không tìm thấy dữ liệu");
-
-      // Cập nhật thông tin sửa
-      document.getElementById("sua_ngay").value = data.ngay;
-      document.getElementById("sua_lop").value = data.lop;
-      document.getElementById("sua_ho_ten").value = data.ho_ten;
-      document.getElementById("sua_thoi_gian").value = data.thoi_gian;
-      document.getElementById("sua_loai").value = data.loai;
-      document.getElementById("sua_vi_pham").value = data.vi_pham;
-      document.getElementById("sua_mo_ta").value = data.mo_ta;
-      document.getElementById("sua_hinh_thuc").value = data.hinh_thuc;
-      document.getElementById("sua_diem_tru").value = data.diem_tru;
-
-      // Mở popup sửa lỗi
-      document.getElementById("popupSua").style.display = "flex";
-    })
-    .catch(() => {
-      alert("Không thể tải dữ liệu để sửa");
-
-      // Lưu vào hàng đợi lỗi chưa gửi
-      addPending({
-        localId: "LOCAL_" + Date.now(),
-        status: "pending",
-        nguoi: sessionStorage.getItem("GT_LOGIN_USER"),
-        ngay: document.getElementById("sua_ngay").value,
-        lop: document.getElementById("sua_lop").value,
-        ho_ten: document.getElementById("sua_ho_ten").value,
-        thoi_gian: document.getElementById("sua_thoi_gian").value,
-        loai: document.getElementById("sua_loai").value,
-        vi_pham: document.getElementById("sua_vi_pham").value,
-        mo_ta: document.getElementById("sua_mo_ta").value,
-        hinh_thuc: document.getElementById("sua_hinh_thuc").value,
-        diem_tru: document.getElementById("sua_diem_tru").value
-      });
-    });
-}
-
-capNhatKhoiSua();
-capNhatKhungGioSua();
-capNhatLoaiVaViPhamSua();
-
-
-document.getElementById("sua_ngay").value = data.ngay;
-document.getElementById("sua_khoi").value = LOP_KHOI[data.lop];
-capNhatLopSua();
-const LOP_KHOI = {};
-Object.keys(DS_LOP_HOC_SINH).forEach(lop => {
-  if (/^[6-9]/.test(lop)) LOP_KHOI[lop] = "THCS";
-  else if (/^(10|11|12)/.test(lop)) LOP_KHOI[lop] = "THPT";
-});
-
-document.getElementById("sua_lop").value = data.lop;
-capNhatHocSinhSua();
-document.getElementById("sua_ho_ten").value = data.ho_ten;
-document.getElementById("sua_thoi_gian").value = data.thoi_gian;
-document.getElementById("sua_loai").value = data.loai;
-capNhatViPhamSua();
-document.getElementById("sua_vi_pham").value = data.vi_pham;
-document.getElementById("sua_mo_ta").value = data.mo_ta;
-document.getElementById("sua_hinh_thuc").value = data.hinh_thuc;
-document.getElementById("sua_diem_tru").value = data.diem_tru;
-
-
-document.getElementById("popupSua").style.display = "flex";
-})
-.catch(() => alert("Không thể tải dữ liệu để sửa"));
 }
 
 function suaTrucTiepDB(id) {
