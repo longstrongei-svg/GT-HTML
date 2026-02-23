@@ -1751,7 +1751,12 @@ const QUY_DINH_VI_PHAM = QUY_DINH_RAW
     };
   });
 
-const API="https://gt.giamthiwellspring.site/send";
+const API_ROOT =
+  location.protocol === "file:"
+    ? "http://127.0.0.1:5000"
+    : location.origin;
+
+const API = API_ROOT + "/send";
 const KEY="GT_HISTORY";
 let editIndex=null;
 
@@ -1834,8 +1839,6 @@ function napUserDangNhap() {
   });
 }
 
-
-const API_ROOT = API.replace("/send", "");
 
 function xemAnh(src) {
   document.getElementById("viewerImg").src = src;
@@ -2274,7 +2277,6 @@ function veBang() {
     return;
   }
 
-  const API_ROOT = API.replace("/send", "");
   const url = API_ROOT + "/api/my?nguoi=" + encodeURIComponent(user);
 
   // Lấy danh sách pending từ localStorage
@@ -2612,7 +2614,6 @@ function loadAllLoi() {
   const tb = document.getElementById("all_loi");
   tb.innerHTML = "<tr><td colspan='11'>⏳ Đang tải dữ liệu...</td></tr>";
 
-  const API_ROOT = API.replace("/send", "");
   const API_ALL  = API_ROOT + "/api/all";
 
   fetch(API_ALL)
@@ -2710,7 +2711,6 @@ function apDungBoLoc() {
   const fNguoi = document.getElementById("f_nguoi").value;
   const fHS    = document.getElementById("f_hocsinh").value.toLowerCase();
 
-  const API_ROOT = API.replace("/send", "");
 
   ALL_DATA
     .filter(i =>
@@ -2837,7 +2837,6 @@ function capNhatSoLan() {
       return;
     }
 
-    const API_ROOT = API.replace("/send", "");
     const url =
       API_ROOT +
       "/api/so_lan?lop=" + encodeURIComponent(lop) +
