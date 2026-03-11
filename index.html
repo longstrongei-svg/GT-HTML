@@ -185,7 +185,7 @@
 
   <script>
       const API_URL = location.protocol === "file:" 
-        ? "http://127.0.0.1:9999/api/receive"
+        ? "http://" + window.location.hostname + ":5002/api/receive"
         : "https://GIAMDINH.giamthiwellspring.site/api/receive";
       let serverIP = "INTERNET";
       let judgeId = 1;
