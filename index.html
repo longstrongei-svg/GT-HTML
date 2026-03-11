@@ -18,7 +18,7 @@
     .btn.red { background: red; color: white; }
     .btn.blue { background: blue; color: white; }
     .status {
-      height: 30px;
+      height: 30px;           /* Luôn chiếm 30px chiều cao */
       font-size: 18px;
       color: green;
       margin-bottom: 10px;
@@ -26,16 +26,15 @@
       overflow: hidden;
       white-space: nowrap;
     }
-    label, input, select { display: block; margin-bottom: 10px; }
-    input, select { padding: 10px; width: 100%; font-size: 20px; border-radius: 8px; border: 2px solid #aaa; box-sizing: border-box; }
-    select { cursor: pointer; background: white; }
+    label, input { display: block; margin-bottom: 10px; }
+    input { padding: 5px; width: 100%; }
     button.save-btn { 
       margin-top: 10px; 
       width: 100%; 
-      padding: 16px;
-      font-size: 18px;
-      font-weight: bold;
-      border-radius: 8px;
+      padding: 16px;       /* tăng kích thước vùng bấm */
+      font-size: 18px;     /* chữ to hơn */
+      font-weight: bold;   /* chữ đậm hơn để dễ thấy */
+      border-radius: 8px;  /* bo góc nhẹ nhàng hơn */
     }
     .setting-box { max-width: 300px; margin: 0 auto; text-align: left; }
     .number-grid {
@@ -76,6 +75,7 @@
       margin-top: 20px;
     }
 
+    /* Chế độ xoay ngang toàn trang */
     body.landscape-mode {
       transform: rotate(90deg);
       transform-origin: center center;
@@ -89,14 +89,16 @@
       overflow-x: hidden;
     }
 
+    /* Đảm bảo các tab vẫn hiển thị đúng */
     body.landscape-mode .tab-content {
-      height: calc(100vh - 120px);
+      height: calc(100vh - 120px); /* Trừ đi chiều cao header */
       overflow-y: auto;
     }
 
+    /* Căn chỉnh lại header (tiêu đề và nút tab) */
     body.landscape-mode h1,
     body.landscape-mode .tabs {
-      transform: rotate(0deg);
+      transform: rotate(0deg); /* Giữ nguyên hướng chữ */
       position: relative;
       z-index: 1000;
       margin: 0 auto;
@@ -104,9 +106,11 @@
       text-align: center;
     }
 
+    /* Đảm bảo nút không bị méo */
     body.landscape-mode .btn {
       transform: rotate(0deg);
     }
+
   </style>
 </head>
 <body>
@@ -137,14 +141,8 @@
   <div id="settingTab" class="tab-content active">
     <div class="setting-box">
 
-      <label>🔢 Chọn số giám định:</label>
-      <select id="judgeId">
-        <option value="1">Giám định 1</option>
-        <option value="2">Giám định 2</option>
-        <option value="3">Giám định 3</option>
-        <option value="4">Giám định 4</option>
-        <option value="5">Giám định 5</option>
-      </select>
+      <label>🔢 Nhập số giám định (1-5):</label>
+      <input type="number" id="judgeId" min="1" max="5" value="1">
 
       <button class="save-btn" onclick="applySettings()">💾 XÁC NHẬN CÀI ĐẶT</button>
       <div class="status" id="settingStatus"></div>
@@ -154,7 +152,6 @@
       <button class="btn" style="background: teal; color: white; margin-left: 40px;" onclick="showTabDirect('scoreTab')">⚔️ ĐỐI KHÁNG</button>
     </div>
   </div>
-
   <!-- Tab Hội diễn -->
   <div id="performanceTab" class="tab-content">
     <h2>🎯 Chấm điểm Hội diễn</h2>
@@ -163,6 +160,7 @@
 
     <div id="perfDisplay" style="font-size: 80px; margin: 20px;">0</div>
 
+    <!-- KHUNG BÀN PHÍM -->
     <div class="number-pad-container">
       <div class="number-grid">
         <button class="btn number" onclick="appendDigit(1)">1</button>
@@ -180,30 +178,29 @@
       </div>
     </div>
 
+    <!-- THÔNG BÁO TRẠNG THÁI -->
     <div class="status" id="statusPerf"></div>
   </div>
-
   <script>
-      // SỬA LẠI NHƯ NÀY:
-      const API_URL = (() => {
-          // Nếu đang chạy từ file (localhost)
-          if (location.protocol === "file:") {
-              return "http://127.0.0.1:5002/api/receive";  // ĐỔI 9999 -> 5002
-          }
-          // Nếu đang chạy qua internet (domain)
-          return "https://GIAMDINH.giamthiwellspring.site/api/receive";
-      })();
-      let serverIP = "INTERNET";
+      const API_URL =
+        location.protocol === "file:"
+          ? "http://127.0.0.1:5002/api/receive"                 // chạy local để test
+          : "https://GIAMDINH.giamthiwellspring.site/api/receive"; // chạy GitHub Pages
+      let serverIP = "INTERNET"; // không còn dùng
       let judgeId = 1;
-      let sanId = 1;
+      let sanId = 1;   // <<< THÊM
       let isConfigured = false;
 
+      // ĐỌC SÂN TỪ URL
       const params = new URLSearchParams(window.location.search);
       sanId = parseInt(params.get("san")) || 1;
 
+
       function showTab(tabId, buttonElement) {
+        // Nếu là tab Đối kháng hoặc Hội diễn thì kiểm tra cài đặt
         if ((tabId === "scoreTab" || tabId === "performanceTab") && !checkAndApplySettings()) {
-          document.getElementById("settingStatus").textContent = "⚠️ Vui lòng chọn số giám định (1-5) trước khi sử dụng";
+          // Nếu không đủ thông tin thì quay lại tab Thiết lập
+          document.getElementById("settingStatus").textContent = "⚠️ Vui lòng nhập đúng IP và số giám định (1-5) trước khi sử dụng";
           showTabDirect("settingTab");
           return;
         }
@@ -213,6 +210,7 @@
         document.getElementById(tabId).classList.add("active");
         buttonElement.classList.add("active");
 
+        // Xoay toàn bộ trang nếu là tab Đối kháng
         if (tabId === "scoreTab") {
           document.body.classList.add("landscape-mode");
         } else {
@@ -232,6 +230,7 @@
         return false;
       }
 
+
       function updateHeader() {
         const judgeText = isConfigured
           ? `Giám định số ${judgeId}`
@@ -240,17 +239,17 @@
         document.getElementById("judgeTitle").textContent =
           `SÂN ${sanId} - ${judgeText}`;
       }
-
       document.addEventListener("DOMContentLoaded", () => {
         updateHeader();
       });
+
 
       function applySettings() {
         const judgeInput = parseInt(document.getElementById("judgeId").value);
 
         if (isNaN(judgeInput) || judgeInput < 1 || judgeInput > 5) {
           document.getElementById("settingStatus").textContent =
-            "❌ Vui lòng chọn số giám định (1-5)";
+            "❌ Vui lòng nhập số giám định (1-5)";
           isConfigured = false;
           updateHeader();
           return;
@@ -267,10 +266,12 @@
         updateHeader();
       }
 
+
       let perfCurrent = "";
 
       function appendDigit(d) {
         if (perfCurrent.length >= 2) {
+          // Nếu đã 2 chữ số, bỏ chữ số đầu tiên rồi thêm số mới
           perfCurrent = perfCurrent.slice(1) + d.toString();
         } else {
           perfCurrent += d.toString();
@@ -284,49 +285,58 @@
       }
 
       function submitPerfScore() {
-          const status = document.getElementById("statusPerf");
-          const score = parseInt(perfCurrent);
-          const btn = document.getElementById("submitPerfBtn");
+        const status = document.getElementById("statusPerf");
+        const score = parseInt(perfCurrent);
+        const btn = document.getElementById("submitPerfBtn");
 
-          if (!isConfigured) {
-              status.textContent = "⚠️ Vui lòng thiết lập GĐ.";
-              return;
-          }
-          if (isNaN(score) || score < 0 || score > 99) {
-              status.textContent = "❌ Điểm không hợp lệ.";
-              return;
-          }
+        if (!isConfigured) {
+          status.textContent = "⚠️ Vui lòng thiết lập IP và GĐ.";
+          return;
+        }
+        if (isNaN(score) || score < 0 || score > 99) {
+          status.textContent = "❌ Điểm không hợp lệ.";
+          return;
+        }
 
-          btn.classList.add("blink");
-          if (navigator.vibrate) {
-              navigator.vibrate(100);
-          }
-          setTimeout(() => btn.classList.remove("blink"), 200);
+        // Hiệu ứng nhấp nháy + rung
+        btn.classList.add("blink");
 
-          const payload = {
-              type: "performance",
-              san: sanId,
-              judge: judgeId,
-              score: score
-          };
+        if (window.AppInventor) {
+          window.AppInventor.setWebViewString("vibrate");
+        } else if (navigator.vibrate) {
+          navigator.vibrate(100);
+        }
 
-          fetch(API_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-          })
+
+        setTimeout(() => btn.classList.remove("blink"), 200);
+
+
+        const payload = {
+          type: "performance",
+          san: sanId,          // <<< THÊM
+          judge: judgeId,
+          score: score
+        };
+
+        fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
           .then(response => {
-              if (response.ok || response.status === 200) {
-                  status.textContent = "✅ Gửi điểm thành công.";
-                  setTimeout(() => status.textContent = "", 2000);
-              } else {
-                  throw new Error("HTTP " + response.status);
-              }
+            if (!response.ok) throw new Error();
+            return response.text();
+          })
+          .then(text => {
+            status.textContent = "✅ Gửi điểm thành công.";
+            document.getElementById("status").textContent = "";
+            // Giữ nguyên điểm sau khi gửi thành công
+            setTimeout(() => status.textContent = "", 2000);
           })
           .catch(() => {
-              status.textContent = "❌ Không gửi được điểm.";
-              status.style.color = "red";
-              setTimeout(() => status.textContent = "", 3000);
+            status.textContent = "❌ Không gửi được điểm.";
+            status.style.color = "red";
+            setTimeout(() => status.textContent = "", 3000);
           });
       }
 
@@ -339,8 +349,10 @@
           return;
         }
 
+        // Nháy nút
         btn.classList.add("blink");
 
+        // Rung
         if (window.AppInventor) {
           window.AppInventor.setWebViewString("vibrate");
         } else if (navigator.vibrate) {
@@ -354,20 +366,20 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             type: "combat",
-            san: sanId,
+            san: sanId,          // <<< THÊM
             judge: judgeId,
             team: competitor,
             action: type
           })
         })
           .then(res => {
-            if (res.ok || res.status === 200) {
-              status.textContent = "✅ Gửi điểm thành công";
-              status.style.color = "green";
-              setTimeout(() => status.textContent = "", 2000);
-            } else {
-              throw new Error("HTTP " + res.status);
-            }
+            if (!res.ok) throw new Error();
+            return res.json();
+          })
+          .then(() => {
+            status.textContent = "✅ Gửi điểm thành công";
+            status.style.color = "green";
+            setTimeout(() => status.textContent = "", 2000);
           })
           .catch(() => {
             status.textContent = "❌ Không gửi được điểm.";
@@ -376,36 +388,46 @@
           });
       }
 
+
+      // Hàm cập nhật trạng thái mạng
       function updateNetworkStatus() {
         const status = document.getElementById("status");
         if (!navigator.onLine) {
           status.textContent = "❌ Mất kết nối";
           status.style.color = "red";
         } else {
+          // Nếu muốn xóa dòng mất kết nối khi có mạng trở lại:
           status.textContent = "";
           status.style.color = "green";
         }
       }
 
+      // Lắng nghe sự kiện thay đổi mạng
       window.addEventListener("online", updateNetworkStatus);
       window.addEventListener("offline", updateNetworkStatus);
+
+      // Gọi lần đầu khi trang mở
       updateNetworkStatus();
 
       function showTabDirect(tabId) {
+        // Nếu là tab Đối kháng hoặc Hội diễn thì kiểm tra cài đặt
         if ((tabId === "scoreTab" || tabId === "performanceTab") && !checkAndApplySettings()) {
-          document.getElementById("settingStatus").textContent = "⚠️ Vui lòng chọn số giám định (1-5) trước khi sử dụng";
+          // Nếu không đủ thông tin thì quay lại tab Thiết lập
+          document.getElementById("settingStatus").textContent = "⚠️ Vui lòng nhập đúng IP và số giám định (1-5) trước khi sử dụng";
           tabId = "settingTab";
         }
         
         document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
         document.getElementById(tabId).classList.add("active");
 
+        // Xoay toàn bộ trang nếu là tab Đối kháng
         if (tabId === "scoreTab") {
           document.body.classList.add("landscape-mode");
         } else {
           document.body.classList.remove("landscape-mode");
         }
 
+        // Cập nhật active tab button
         document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
         if (tabId === "settingTab") {
           document.querySelectorAll(".tab-btn")[0].classList.add("active");
@@ -415,6 +437,8 @@
           document.querySelectorAll(".tab-btn")[2].classList.add("active");
         }
       }
-  </script>
+  </script>  
+
+
 </body>
 </html>
