@@ -184,9 +184,15 @@
   </div>
 
   <script>
-      const API_URL = location.protocol === "file:" 
-        ? "http://" + window.location.hostname + ":5002/api/receive"
-        : "https://GIAMDINH.giamthiwellspring.site/api/receive";
+      // SỬA LẠI NHƯ NÀY:
+      const API_URL = (() => {
+          // Nếu đang chạy từ file (localhost)
+          if (location.protocol === "file:") {
+              return "http://127.0.0.1:5002/api/receive";  // ĐỔI 9999 -> 5002
+          }
+          // Nếu đang chạy qua internet (domain)
+          return "https://GIAMDINH.giamthiwellspring.site/api/receive";
+      })();
       let serverIP = "INTERNET";
       let judgeId = 1;
       let sanId = 1;
