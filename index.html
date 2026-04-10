@@ -369,6 +369,23 @@ tr.muc-3 {
   <input id="f_hocsinh" placeholder="🔍 Tìm học sinh">
 </div>
 
+<!-- Thanh phân trang -->
+<div id="paginationBar" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+  <span id="pageInfo" style="font-size:13px;color:#555;"></span>
+  <div style="margin-left:auto;display:flex;gap:4px;">
+    <button id="btnFirst" onclick="goPage(1)" style="padding:4px 8px;font-size:13px;width:auto;background:#1565c0;">⏮</button>
+    <button id="btnPrev"  onclick="goPage(currentPage-1)" style="padding:4px 8px;font-size:13px;width:auto;background:#1565c0;">◀</button>
+    <span id="pageNumbers" style="display:flex;gap:3px;"></span>
+    <button id="btnNext"  onclick="goPage(currentPage+1)" style="padding:4px 8px;font-size:13px;width:auto;background:#1565c0;">▶</button>
+    <button id="btnLast"  onclick="goPage(totalPages)" style="padding:4px 8px;font-size:13px;width:auto;background:#1565c0;">⏭</button>
+  </div>
+  <select id="pageSizeSelect" onchange="changePageSize()" style="padding:4px;font-size:13px;width:auto;">
+    <option value="50">50 / trang</option>
+    <option value="100">100 / trang</option>
+    <option value="200">200 / trang</option>
+  </select>
+</div>
+
   <table>
     <thead>
       <tr>
@@ -2611,31 +2628,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 let ALL_DATA = [];
-function loadAllLoi() {
-  const tb = document.getElementById("all_loi");
-  tb.innerHTML = "<tr><td colspan='11'>⏳ Đang tải dữ liệu...</td></tr>";
+let FILTERED_DATA = [];
+let currentPage = 1;
+let pageSize = 50;
+let totalPages = 1;
+let loadAllLoi_done = false;
 
-  const API_ALL  = API_ROOT + "/api/all";
+function loadAllLoi() {
+  if (loadAllLoi_done) { apDungBoLoc(); return; } // ✅ Không tải lại nếu đã có data
+
+  const tb = document.getElementById("all_loi");
+  tb.innerHTML = "<tr><td colspan='12'>⏳ Đang tải dữ liệu...</td></tr>";
+
+  const API_ALL = API_ROOT + "/api/all";
 
   fetch(API_ALL)
     .then(r => r.json())
     .then(ds => {
-
       if (!Array.isArray(ds) || ds.length === 0) {
-        tb.innerHTML = "<tr><td colspan='11'>Không có dữ liệu</td></tr>";
+        tb.innerHTML = "<tr><td colspan='12'>Không có dữ liệu</td></tr>";
         return;
       }
-
-      // ===== 🔥 CỐT LÕI CHO BỘ LỌC =====
-      ALL_DATA = ds;        // 1️⃣ giữ dữ liệu gốc
-      napBoLoc(ds);         // 2️⃣ nạp option cho bộ lọc
-      apDungBoLoc();        // 3️⃣ vẽ bảng theo filter hiện tại
-
+      loadAllLoi_done = true;
+      ALL_DATA = ds.slice().reverse(); // ✅ reverse một lần duy nhất
+      napBoLoc(ds);
+      apDungBoLoc();
     })
     .catch(err => {
       console.error(err);
-      tb.innerHTML =
-        "<tr><td colspan='11'>❌ Không kết nối được máy chủ</td></tr>";
+      tb.innerHTML = "<tr><td colspan='12'>❌ Không kết nối được máy chủ</td></tr>";
     });
 }
 
@@ -2695,36 +2716,55 @@ function napBoLoc(ds) {
 
   const uniq = arr => [...new Set(arr.filter(v => v))];
 
-  uniq(ds.map(i => i.ngay)).forEach(v => fNgay.innerHTML += `<option>${v}</option>`);
-  uniq(ds.map(i => i.lop)).forEach(v => fLop.innerHTML += `<option>${v}</option>`);
-  uniq(ds.map(i => i.vi_pham)).forEach(v => fVP.innerHTML += `<option>${v}</option>`);
-  uniq(ds.map(i => i.nguoi)).forEach(v => fNguoi.innerHTML += `<option>${v}</option>`);
+  // Build options bằng fragment — nhanh hơn innerHTML +=
+  const addOpts = (sel, vals) => {
+    const frag = document.createDocumentFragment();
+    vals.forEach(v => { const o = document.createElement("option"); o.value = o.textContent = v; frag.appendChild(o); });
+    sel.appendChild(frag);
+  };
+
+  addOpts(fNgay,  uniq(ds.map(i => i.ngay)));
+  addOpts(fLop,   uniq(ds.map(i => i.lop)));
+  addOpts(fVP,    uniq(ds.map(i => i.vi_pham)));
+  addOpts(fNguoi, uniq(ds.map(i => i.nguoi)));
 }
 
 
 function apDungBoLoc() {
-  const tb = document.getElementById("all_loi");
-  tb.innerHTML = "";
-
   const fNgay  = document.getElementById("f_ngay").value;
   const fLop   = document.getElementById("f_lop").value;
   const fVP    = document.getElementById("f_vipham").value;
   const fNguoi = document.getElementById("f_nguoi").value;
   const fHS    = document.getElementById("f_hocsinh").value.toLowerCase();
 
+  FILTERED_DATA = ALL_DATA.filter(i =>
+    (!fNgay  || i.ngay === fNgay) &&
+    (!fLop   || i.lop === fLop) &&
+    (!fVP    || i.vi_pham === fVP) &&
+    (!fNguoi || i.nguoi === fNguoi) &&
+    (!fHS    || (i.hoc_sinh || "").toLowerCase().includes(fHS))
+  );
 
-  ALL_DATA
-    .filter(i =>
-      (!fNgay  || i.ngay === fNgay) &&
-      (!fLop   || i.lop === fLop) &&
-      (!fVP    || i.vi_pham === fVP) &&
-      (!fNguoi || i.nguoi === fNguoi) &&
-      (!fHS    || (i.hoc_sinh || "").toLowerCase().includes(fHS))
-    )
-    .slice()      // ✅ tránh làm thay đổi ALL_DATA gốc
-    .reverse()    // ✅ nhập sau → hiển thị trước
-    .forEach(i => {
+  currentPage = 1;
+  totalPages = Math.max(1, Math.ceil(FILTERED_DATA.length / pageSize));
+  renderPage();
+}
 
+function renderPage() {
+  const tb = document.getElementById("all_loi");
+  const start = (currentPage - 1) * pageSize;
+  const end   = Math.min(start + pageSize, FILTERED_DATA.length);
+  const slice = FILTERED_DATA.slice(start, end);
+
+  // ✅ Dùng DocumentFragment — không rebuild DOM từng dòng
+  const frag = document.createDocumentFragment();
+
+  if (slice.length === 0) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="12">Không có dữ liệu phù hợp</td>`;
+    frag.appendChild(tr);
+  } else {
+    slice.forEach(i => {
       const soLan = Number(i.so_lan ?? 1);
       const capDo = String(i.cap_do || "");
       let rowClass = "";
@@ -2737,27 +2777,70 @@ function apDungBoLoc() {
         imgHtml = `<img src="${imgUrl}" class="img-preview">`;
       }
 
-      tb.innerHTML += `
-        <tr class="${rowClass}">
-          <td>${formatNgayDDMMYYYY(i.ngay)}</td>
-          <td>${i.lop || ""}</td>
-          <td>${i.hoc_sinh || ""}</td>
-          <td>${i.thoi_gian || ""}</td>
-          <td>${i.loai || ""}</td>
-          <td>${i.vi_pham || ""}</td>
-          <td>${i.mo_ta || ""}</td>
-          <td>${i.cap_do || ""}</td>
-          <td style="text-align:center">${soLan}</td>
-          <td style="text-align:center">${i.diem_tru ?? 0}</td>
-          <td>${i.nguoi || ""}</td>
-          <td style="text-align:center">${imgHtml}</td>
-        </tr>
+      const tr = document.createElement("tr");
+      if (rowClass) tr.className = rowClass;
+      tr.innerHTML = `
+        <td>${formatNgayDDMMYYYY(i.ngay)}</td>
+        <td>${i.lop || ""}</td>
+        <td>${i.hoc_sinh || ""}</td>
+        <td>${i.thoi_gian || ""}</td>
+        <td>${i.loai || ""}</td>
+        <td>${i.vi_pham || ""}</td>
+        <td>${i.mo_ta || ""}</td>
+        <td>${i.cap_do || ""}</td>
+        <td style="text-align:center">${soLan}</td>
+        <td style="text-align:center">${i.diem_tru ?? 0}</td>
+        <td>${i.nguoi || ""}</td>
+        <td style="text-align:center">${imgHtml}</td>
       `;
+      frag.appendChild(tr);
     });
-
-  if (!tb.innerHTML) {
-    tb.innerHTML = `<tr><td colspan="12">Không có dữ liệu phù hợp</td></tr>`;
   }
+
+  tb.innerHTML = "";      // xóa một lần duy nhất
+  tb.appendChild(frag);  // gắn vào DOM một lần duy nhất
+
+  // Cập nhật phân trang
+  const total = FILTERED_DATA.length;
+  document.getElementById("pageInfo").textContent =
+    `Hiển thị ${start+1}–${end} / ${total} lỗi`;
+
+  // Nút số trang
+  const pgNums = document.getElementById("pageNumbers");
+  pgNums.innerHTML = "";
+  const maxBtns = 5;
+  let pStart = Math.max(1, currentPage - 2);
+  let pEnd   = Math.min(totalPages, pStart + maxBtns - 1);
+  if (pEnd - pStart < maxBtns - 1) pStart = Math.max(1, pEnd - maxBtns + 1);
+
+  for (let p = pStart; p <= pEnd; p++) {
+    const btn = document.createElement("button");
+    btn.textContent = p;
+    btn.style.cssText = `padding:4px 8px;font-size:13px;width:auto;background:${p===currentPage?"#0d47a1":"#1565c0"};color:white;border:none;cursor:pointer;`;
+    btn.onclick = (()=>{ const pg=p; return ()=>goPage(pg); })();
+    pgNums.appendChild(btn);
+  }
+
+  document.getElementById("btnFirst").disabled = currentPage <= 1;
+  document.getElementById("btnPrev").disabled  = currentPage <= 1;
+  document.getElementById("btnNext").disabled  = currentPage >= totalPages;
+  document.getElementById("btnLast").disabled  = currentPage >= totalPages;
+}
+
+function goPage(p) {
+  p = Math.max(1, Math.min(totalPages, p));
+  if (p === currentPage) return;
+  currentPage = p;
+  renderPage();
+  // Cuộn lên đầu bảng
+  document.getElementById("all_loi").closest(".page")?.scrollTo(0, 0);
+}
+
+function changePageSize() {
+  pageSize = parseInt(document.getElementById("pageSizeSelect").value);
+  totalPages = Math.max(1, Math.ceil(FILTERED_DATA.length / pageSize));
+  currentPage = 1;
+  renderPage();
 }
 
 
