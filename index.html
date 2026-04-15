@@ -2202,9 +2202,10 @@ async function gui() {
     });
 
     status.textContent =
-      "⚠️ Server đang tắt – đã lưu vào Lịch sử (Chưa gửi)";
+      "⚠️ Server đang tắt – đã lưu vào Lịch sử (Chưa gửi). Sẽ tự gửi khi server mở lại.";
     status.className = "status err";
 
+    batDauKiemTraServer();
     veBang();
   }
 }
@@ -2418,11 +2419,71 @@ function xoaPending(localId) {
   veBang();
 }
 
+// ====== PENDING QUEUE – LƯU/NẠP/XÓA ======
+const PENDING_KEY = "GT_PENDING_QUEUE";
+
+function getPendingQueue() {
+  try {
+    return JSON.parse(localStorage.getItem(PENDING_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function savePendingQueue(queue) {
+  localStorage.setItem(PENDING_KEY, JSON.stringify(queue));
+}
+
+function addPending(item) {
+  const queue = getPendingQueue();
+  queue.push(item);
+  savePendingQueue(queue);
+}
+
+function removePending(localId) {
+  const queue = getPendingQueue().filter(x => x.localId !== localId);
+  savePendingQueue(queue);
+}
+
+// ====== TỰ ĐỘNG GỬI LẠI KHI SERVER MỞ LẠI ======
+// Kiểm tra server mỗi 15 giây nếu còn pending
+let _serverCheckTimer = null;
+
+function batDauKiemTraServer() {
+  if (_serverCheckTimer) return; // đang chạy rồi
+  _serverCheckTimer = setInterval(async () => {
+    const queue = getPendingQueue();
+    if (queue.length === 0) {
+      clearInterval(_serverCheckTimer);
+      _serverCheckTimer = null;
+      return;
+    }
+    try {
+      const r = await fetch(API_ROOT + "/api/ping", { method: "GET" });
+      if (r.ok) {
+        // Server đã mở lại → gửi lại tất cả pending
+        clearInterval(_serverCheckTimer);
+        _serverCheckTimer = null;
+        for (const p of [...queue]) {
+          await guiLaiPending(p.localId);
+        }
+        veBang();
+      }
+    } catch {
+      // server vẫn tắt, thử lại sau
+    }
+  }, 15000);
+}
+
+// Khởi động kiểm tra nếu có pending sẵn
+document.addEventListener("DOMContentLoaded", () => {
+  if (getPendingQueue().length > 0) {
+    batDauKiemTraServer();
+  }
+});
+
 window.addEventListener("online", () => {
-  const pendingQueue = getPendingQueue();
-  pendingQueue.forEach(p => {
-    guiLaiPending(p.localId);  // Gửi lại lỗi chưa gửi
-  });
+  batDauKiemTraServer();
 });
 
 
