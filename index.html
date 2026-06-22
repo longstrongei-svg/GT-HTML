@@ -179,6 +179,9 @@
       padding:20px 16px 32px;
       min-height:420px;
       max-height:none;
+      -webkit-overflow-scrolling: touch; /* iOS momentum scroll */
+      touch-action: pan-x pan-y;         /* Cho phép scroll cả ngang + dọc trên mobile */
+      overscroll-behavior: contain;      /* Ngăn scroll lan ra ngoài container */
     }
 
     /* để svg không bị co méo */
@@ -500,6 +503,7 @@
     .ov-nav-btn[data-color="green"]:hover  { border-color: #4ade80; background: #f0fdf4; box-shadow: 0 14px 36px rgba(34,197,94,0.16); }
     .ov-nav-btn[data-color="teal"]:hover   { border-color: #2dd4bf; background: #f0fdfa; box-shadow: 0 14px 36px rgba(20,184,166,0.16); }
     .ov-nav-btn[data-color="purple"]:hover { border-color: #a78bfa; background: #f5f3ff; box-shadow: 0 14px 36px rgba(139,92,246,0.16); }
+    .ov-nav-btn[data-color="sky"]:hover    { border-color: #38bdf8; background: #f0f9ff; box-shadow: 0 14px 36px rgba(14,165,233,0.18); }
 
     .ov-nav-icon {
       font-size: 32px;
@@ -544,6 +548,7 @@
 <!-- MAIN TABS -->
 <div class="main-tabs">
   <div class="main-tab overview-tab active" onclick="switchTab('overview',this)"><span class="ov-home-dot"></span>🏠 Tổng quan</div>
+  <div class="main-tab"  onclick="switchTab('registration',this)">👥 VĐV theo Đơn vị</div>
   <div class="main-tab"  onclick="switchTab('sigma',this)">🏆 Sigma Đối kháng</div>
   <div class="main-tab"  onclick="switchTab('combat',this)">⚔️ Danh sách trận Đối kháng</div>
   <div class="main-tab"  onclick="switchTab('combat-medal',this)">🥊 Huy chương Đối kháng</div>
@@ -612,6 +617,10 @@
     <!-- Thống kê nhanh -->
     <div class="ov-stats">
       <div class="ov-stat">
+        <div class="ov-stat-num" id="ovStatTongVDV">—</div>
+        <div class="ov-stat-lbl">Tổng số VĐV</div>
+      </div>
+      <div class="ov-stat">
         <div class="ov-stat-num" id="ovStatTran">—</div>
         <div class="ov-stat-lbl">Trận đấu Đối kháng</div>
       </div>
@@ -631,8 +640,14 @@
 
     <div class="ov-divider">— Chọn mục xem —</div>
 
-    <!-- 6 nút điều hướng -->
+    <!-- 7 nút điều hướng -->
     <div class="ov-nav-grid">
+
+      <div class="ov-nav-btn" data-color="sky" onclick="navTo('registration')">
+        <div class="ov-nav-icon">👥</div>
+        <div class="ov-nav-label">VĐV theo<br>Đơn vị</div>
+        <div class="ov-nav-desc">Số lượng VĐV đăng ký mỗi đoàn</div>
+      </div>
 
       <div class="ov-nav-btn" data-color="amber" onclick="navTo('sigma')">
         <div class="ov-nav-icon">🏆</div>
@@ -672,6 +687,27 @@
 
     </div>
   </div>
+</div>
+
+<!-- ══════════════════ TAB: VĐV THEO ĐƠN VỊ ══════════════════ -->
+<div id="tab-registration" class="tab-content">
+  <div class="controls">
+    <input class="search-box" id="qReg" type="text" placeholder="🔍 Tìm đơn vị..." oninput="rRegistration()">
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <span style="font-size:12px;color:#475569;white-space:nowrap">↕️ Sắp xếp:</span>
+      <select id="regSort" onchange="rRegistration()"
+        style="background:#fff;border:1px solid #cbd5e1;border-radius:16px;color:#1e293b;
+               font-size:12px;padding:4px 10px;outline:none;cursor:pointer">
+        <option value="total_desc">Số VĐV: nhiều → ít</option>
+        <option value="name_asc">Tên đơn vị: A → Z</option>
+      </select>
+    </div>
+    <div class="stats-row">
+      <div class="chip chip-g" id="regTotalVDV">👥 0 VĐV</div>
+      <div class="chip chip-b" id="regTotalDonVi">🏛️ 0 đơn vị</div>
+    </div>
+  </div>
+  <div class="tbl-wrap" id="wRegistration"><div class="loading"><div class="spin"></div><div>Đang kết nối...</div></div></div>
 </div>
 
 <!-- ══════════════════ TAB 1: ĐỐI KHÁNG ══════════════════ -->
@@ -823,6 +859,7 @@ let fCList = 'all';  // filter theo danh sách đối kháng
 let prevC = new Set(), prevPM = new Set();
 let newCombatKeys = new Set();
 let perfAllData = [];   // toàn bộ VĐV hội diễn (kể cả chưa có huy chương)
+let registrationStats = { total_vdv: 0, total_luot: 0, units: [] };  // thống kê đăng ký (Python push)
 
 // ════════════════════════════════════════════════
 // TAB SWITCHING
@@ -859,6 +896,7 @@ function switchTab(name, el, pushHistory = true) {
   if (name === 'perf-result')  { if (typeof rPerfResult    === 'function') rPerfResult(); }
   if (name === 'perf-medal')   { if (typeof rPerfMedal     === 'function') rPerfMedal(); }
   if (name === 'sigma')        { if (typeof rSigma         === 'function') rSigma(); }
+  if (name === 'registration') { if (typeof rRegistration  === 'function') rRegistration(); }
 }
 
 // Xử lý nút Back / Forward của trình duyệt
@@ -872,7 +910,7 @@ window.addEventListener('popstate', function(e) {
 // Ghi state ban đầu (trang overview) vào history khi load
 window.addEventListener('DOMContentLoaded', function() {
   // Thêm data-tab vào từng tab button để switchTab tìm được
-  const tabNames = ['overview','sigma','combat','combat-medal','perf-result','perf-medal','summary'];
+  const tabNames = ['overview','registration','sigma','combat','combat-medal','perf-result','perf-medal','summary'];
   document.querySelectorAll('.main-tab').forEach((t, i) => {
     if (tabNames[i]) t.setAttribute('data-tab', tabNames[i]);
   });
@@ -891,6 +929,7 @@ function navTo(name) {
   // Tìm tab button tương ứng và click
   const tabs = document.querySelectorAll('.main-tab');
   const tabMap = {
+    'registration': '👥 VĐV theo Đơn vị',
     'sigma':        '🏆 Sigma Đối kháng',
     'combat':       '⚔️ Danh sách trận Đối kháng',
     'combat-medal': '🥊 Huy chương Đối kháng',
@@ -929,6 +968,7 @@ function updateOverviewStats() {
   const vdvHD = perfAllData.length;
   const donviSet = new Set();
   for (const r of summaryRows) if (r.donvi) donviSet.add(r.donvi);
+  document.getElementById('ovStatTongVDV').textContent = registrationStats.total_vdv || '—';
   document.getElementById('ovStatTran').textContent  = total || '—';
   document.getElementById('ovStatKQ').textContent    = done  || '—';
   document.getElementById('ovStatVDV').textContent   = vdvHD || '—';
@@ -1137,6 +1177,23 @@ async function fetchAll() {
         }
       } catch(e) { /* bỏ qua nếu node chưa có */ }
     } catch(e) { /* bỏ qua lỗi mạng */ }
+
+    // 4) registration_stats: tổng số VĐV + số lượng theo từng đơn vị (Python push)
+    try {
+      const rReg = await fetchWithTimeout(`${FB}/registration_stats.json`);
+      if (rReg.ok) {
+        const d = await rReg.json();
+        if (d) {
+          registrationStats = {
+            total_vdv:  d.total_vdv  || 0,
+            total_luot: d.total_luot || 0,
+            units:      Array.isArray(d.units) ? d.units : [],
+          };
+          rRegistration();
+        }
+      }
+    } catch(e) { /* bỏ qua nếu node chưa có */ }
+
     // Luôn cập nhật stats tổng quan sau khi fetch xong
     updateOverviewStats();
 
@@ -1197,28 +1254,10 @@ function resolveAllPlaceholders() {
     }
 }
 // ════════════════════════════════════════════════
-// FIX: Auto-refresh Sigma tab mỗi 5 giây
+// FIX: Sigma tab — KHÔNG dùng interval riêng
+// rSigma() sẽ được gọi tự động từ fetchAll() mỗi POLL=5000ms
+// Xóa interval cũ để tránh reset scroll position trên mobile
 // ════════════════════════════════════════════════
-let sigmaRefreshInterval = null;
-
-function startSigmaAutoRefresh() {
-    if (sigmaRefreshInterval) clearInterval(sigmaRefreshInterval);
-    
-    sigmaRefreshInterval = setInterval(() => {
-        // Chỉ refresh nếu đang ở tab Sigma
-        const sigmaTab = document.getElementById('tab-sigma');
-        if (sigmaTab && sigmaTab.classList.contains('active')) {
-            console.log('🔄 Tự động làm mới dữ liệu Sigma...');
-            rSigma(); // Gọi hàm render lại Sigma
-        }
-    }, 1000); // 5 giây
-}
-
-// Khởi động auto-refresh cho Sigma
-startSigmaAutoRefresh();
-
-// Khi chuyển tab, vẫn giữ interval chạy, chỉ refresh khi active
-// Hàm rSigma đã có sẵn trong code của bạn
 // ════════════════════════════════════════════════
 // RENDER: ĐỐI KHÁNG
 // ════════════════════════════════════════════════
@@ -1748,12 +1787,57 @@ function rSummary() {
 }
 
 // ════════════════════════════════════════════════
+// RENDER: VĐV THEO ĐƠN VỊ (Python push registration_stats)
+// ════════════════════════════════════════════════
+function rRegistration() {
+  const q = (document.getElementById('qReg')?.value || '').toLowerCase().trim();
+  const sortMode = document.getElementById('regSort')?.value || 'total_desc';
+
+  let rows = (registrationStats.units || []).filter(u => !q || (u.donvi||'').toLowerCase().includes(q));
+
+  if (sortMode === 'name_asc') {
+    rows = [...rows].sort((a,b) => (a.donvi||'').localeCompare(b.donvi||'','vi'));
+  } else {
+    rows = [...rows].sort((a,b) => (b.total||0)-(a.total||0) || (a.donvi||'').localeCompare(b.donvi||'','vi'));
+  }
+
+  document.getElementById('regTotalVDV').textContent   = `👥 ${registrationStats.total_vdv || 0} VĐV`;
+  document.getElementById('regTotalDonVi').textContent = `🏛️ ${(registrationStats.units||[]).length} đơn vị`;
+
+  const w = document.getElementById('wRegistration');
+  if (!rows.length) {
+    w.innerHTML = emptyHTML('Chưa có dữ liệu đăng ký — Python cần gọi firebase_push_registration_stats()');
+    return;
+  }
+
+  const tbody = rows.map((r, i) => `<tr>
+      <td class="badge badge-stt">${i+1}</td>
+      <td style="font-weight:600;color:#1e293b">${esc(r.donvi||'—')}</td>
+      <td style="text-align:center;font-weight:700;color:#2563eb;font-size:15px">${r.total||0}</td>
+      <td style="text-align:center;color:#7c3aed">${r.hoidien||0}</td>
+      <td style="text-align:center;color:#dc2626">${r.doikhang||0}</td>
+      <td style="text-align:center;color:#15803d">${r.both||0}</td>
+    </tr>`).join('');
+
+  w.innerHTML = `<table>
+    <thead><tr>
+      <th>STT</th><th>Đơn vị</th><th>Tổng VĐV</th>
+      <th>🎽 Chỉ Hội diễn</th><th>⚔️ Chỉ Đối kháng</th><th>🌟 Cả hai</th>
+    </tr></thead>
+    <tbody>${tbody}</tbody></table>`;
+}
+
+// ════════════════════════════════════════════════
 // RENDER: SIGMA ĐỐI KHÁNG — Sơ đồ bracket theo hạng cân
 // ════════════════════════════════════════════════
+// Lưu hash dữ liệu Sigma để tránh re-render không cần thiết (tránh reset scroll)
+let _sigmaLastHash = '';
+
 function rSigma() {
   const w = document.getElementById('wSigma');
   if (!combatData.length) {
     w.innerHTML = `<div class="empty"><div class="ico">⚔️</div><div>Chưa có dữ liệu đối kháng</div></div>`;
+    _sigmaLastHash = '';
     return;
   }
 
@@ -1797,11 +1881,42 @@ function rSigma() {
 
   if (!weightKeys.length) {
     w.innerHTML = `<div class="empty"><div class="ico">🔍</div><div>Không có dữ liệu phù hợp</div></div>`;
+    _sigmaLastHash = '';
     return;
   }
 
   // ── Render từng hạng cân ──
-  w.innerHTML = weightKeys.map(wc => renderSigmaWeight(wc, byWeight[wc])).join('');
+  const newHTML = weightKeys.map(wc => renderSigmaWeight(wc, byWeight[wc])).join('');
+
+  // ✅ FIX SCROLL RESET: Chỉ cập nhật DOM nếu nội dung thực sự thay đổi
+  // Dùng hash đơn giản (length + snippet) để so sánh nhanh
+  const newHash = newHTML.length + '|' + newHTML.slice(0, 120) + newHTML.slice(-80);
+  if (newHash === _sigmaLastHash) return;  // Không thay đổi → bỏ qua, giữ nguyên scroll
+  _sigmaLastHash = newHash;
+
+  // Lưu scroll position của tất cả sigma-bracket-area trước khi re-render
+  const bracketAreas = w.querySelectorAll('.sigma-bracket-area');
+  const scrollPositions = [];
+  bracketAreas.forEach(el => scrollPositions.push({ left: el.scrollLeft, top: el.scrollTop }));
+  // Lưu scroll của container chính
+  const wScrollLeft = w.scrollLeft, wScrollTop = w.scrollTop;
+
+  w.innerHTML = newHTML;
+
+  // ✅ Khôi phục scroll position sau khi render (dùng requestAnimationFrame để chờ DOM paint)
+  requestAnimationFrame(() => {
+    // Restore scroll của container chính
+    w.scrollLeft = wScrollLeft;
+    w.scrollTop  = wScrollTop;
+    // Restore scroll của từng sigma-bracket-area (cuộn ngang SVG)
+    const newAreas = w.querySelectorAll('.sigma-bracket-area');
+    newAreas.forEach((el, i) => {
+      if (scrollPositions[i]) {
+        el.scrollLeft = scrollPositions[i].left;
+        el.scrollTop  = scrollPositions[i].top;
+      }
+    });
+  });
 }
 
 // ────────────────────────────────────────────────
