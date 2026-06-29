@@ -1334,10 +1334,19 @@ function rCombat() {
 // ════════════════════════════════════════════════
 // RENDER: HUY CHƯƠNG ĐỐI KHÁNG
 // ════════════════════════════════════════════════
+// ── Chuẩn hoá tên huy chương: "Đồng 1"/"Đồng 2" → "Đồng" để lookup icon/class nhất quán
+function normMedal(m) {
+  if (!m) return '';
+  if (m === 'Vàng') return 'Vàng';
+  if (m === 'Bạc')  return 'Bạc';
+  if (String(m).startsWith('Đồng')) return 'Đồng';
+  return m;
+}
+
 function rCombatMedal() {
   const q = document.getElementById('qCM').value.toLowerCase().trim();
   const medals = [];
-  const mOrder = {'Vàng':1,'Bạc':2,'Đồng':3};
+  const mOrder = {'Vàng':1,'Bạc':2,'Đồng':3,'Đồng 1':3,'Đồng 2':3};
 
   // combatData đã được dedup thông minh (winner_name > ts > pushKey) trong buildCombatData
   // Chỉ lọc theo sân nếu có filter, không dedup lại
@@ -1392,21 +1401,36 @@ function rCombatMedal() {
     const dm   = hcDrawMode[key] || 'tranh34';
 
     // ── Chung kết → Vàng + Bạc ──
+    // FIX: Dùng Ten_Do_resolved/Ten_Xanh_resolved thay vì Ten_Do/Ten_Xanh thô,
+    // vì tên VĐV trong trận Chung kết/Bán kết thường là placeholder "Thắng trận X"
+    // cho đến khi được resolve. Dùng tên thô → hiển thị sai hoặc đảo Vàng/Bạc.
     if (r.winner_name && loai === 'chung kết') {
-      const winner = r.winner_team==='red' ? {ten:r.Ten_Do,donvi:r.Donvi_Do} : {ten:r.Ten_Xanh,donvi:r.Donvi_Xanh};
-      const loser  = r.winner_team==='red' ? {ten:r.Ten_Xanh,donvi:r.Donvi_Xanh} : {ten:r.Ten_Do,donvi:r.Donvi_Do};
-      grouped[key].items.push({ medal:'Vàng', ten:winner.ten||r.winner_name, donvi:winner.donvi||r.winner_unit||'', san:r._san });
+      const tenDo   = r.Ten_Do_resolved   || r.Ten_Do   || '';
+      const donviDo = r.Donvi_Do_resolved || r.Donvi_Do || '';
+      const tenXanh   = r.Ten_Xanh_resolved   || r.Ten_Xanh   || '';
+      const donviXanh = r.Donvi_Xanh_resolved || r.Donvi_Xanh || '';
+      const winner = r.winner_team==='red' ? {ten:tenDo,donvi:donviDo} : {ten:tenXanh,donvi:donviXanh};
+      const loser  = r.winner_team==='red' ? {ten:tenXanh,donvi:donviXanh} : {ten:tenDo,donvi:donviDo};
+      grouped[key].items.push({ medal:'Vàng', ten:winner.ten||r.winner_name_resolved||r.winner_name, donvi:winner.donvi||r.winner_unit_resolved||r.winner_unit||'', san:r._san });
       grouped[key].items.push({ medal:'Bạc',  ten:loser.ten||'—', donvi:loser.donvi||'', san:r._san });
     }
     // ── Tranh 3-4 → người THẮNG được Đồng ──
     if (r.winner_name && loai.includes('tranh') && loai.includes('3')) {
-      const winner = r.winner_team==='red' ? {ten:r.Ten_Do,donvi:r.Donvi_Do} : {ten:r.Ten_Xanh,donvi:r.Donvi_Xanh};
+      const tenDo   = r.Ten_Do_resolved   || r.Ten_Do   || '';
+      const donviDo = r.Donvi_Do_resolved || r.Donvi_Do || '';
+      const tenXanh   = r.Ten_Xanh_resolved   || r.Ten_Xanh   || '';
+      const donviXanh = r.Donvi_Xanh_resolved || r.Donvi_Xanh || '';
+      const winner = r.winner_team==='red' ? {ten:tenDo,donvi:donviDo} : {ten:tenXanh,donvi:donviXanh};
       grouped[key].items.push({ medal:'Đồng', ten:winner.ten||'—', donvi:winner.donvi||'', san:r._san });
     }
     // ── Bán kết: dong_auto → người THUA được Đồng ngay ──
     if (r.winner_name && dm==='dong_auto' &&
         (loai==='bán kết' || loai==='ban ket' || loai==='banket')) {
-      const loser = r.winner_team==='red' ? {ten:r.Ten_Xanh,donvi:r.Donvi_Xanh} : {ten:r.Ten_Do,donvi:r.Donvi_Do};
+      const tenDo   = r.Ten_Do_resolved   || r.Ten_Do   || '';
+      const donviDo = r.Donvi_Do_resolved || r.Donvi_Do || '';
+      const tenXanh   = r.Ten_Xanh_resolved   || r.Ten_Xanh   || '';
+      const donviXanh = r.Donvi_Xanh_resolved || r.Donvi_Xanh || '';
+      const loser = r.winner_team==='red' ? {ten:tenXanh,donvi:donviXanh} : {ten:tenDo,donvi:donviDo};
       grouped[key].items.push({ medal:'Đồng', ten:loser.ten||'—', donvi:loser.donvi||'', san:r._san });
     }
   }
@@ -1419,7 +1443,11 @@ function rCombatMedal() {
     if (bkList.length !== 1) continue;        // ≥2 BK mà tranh34 → đang chờ Tranh 3-4
     const bk    = bkList[0];
     if (!bk.winner_name) continue;
-    const loser = bk.winner_team==='red' ? {ten:bk.Ten_Xanh,donvi:bk.Donvi_Xanh} : {ten:bk.Ten_Do,donvi:bk.Donvi_Do};
+    const bkTenDo   = bk.Ten_Do_resolved   || bk.Ten_Do   || '';
+    const bkDonviDo = bk.Donvi_Do_resolved || bk.Donvi_Do || '';
+    const bkTenXanh   = bk.Ten_Xanh_resolved   || bk.Ten_Xanh   || '';
+    const bkDonviXanh = bk.Donvi_Xanh_resolved || bk.Donvi_Xanh || '';
+    const loser = bk.winner_team==='red' ? {ten:bkTenXanh,donvi:bkDonviXanh} : {ten:bkTenDo,donvi:bkDonviDo};
     if (!grouped[hc]) grouped[hc] = { nhomtuoi: hc, items:[] };
     grouped[hc].items.push({ medal:'Đồng', ten:loser.ten||'—', donvi:loser.donvi||'', san:bk._san });
   }
@@ -1436,8 +1464,8 @@ function rCombatMedal() {
   const w = document.getElementById('wCombatMedal');
   if (!filtered.length) { w.innerHTML = emptyHTML('Chưa có huy chương đối kháng'); return; }
 
-  const mIcon = {'Vàng':'🥇','Bạc':'🥈','Đồng':'🥉'};
-  const mCls  = {'Vàng':'medal-gold','Bạc':'medal-silver','Đồng':'medal-bronze'};
+  const mIcon = {'Vàng':'🥇','Bạc':'🥈','Đồng':'🥉','Đồng 1':'🥉','Đồng 2':'🥉'};
+  const mCls  = {'Vàng':'medal-gold','Bạc':'medal-silver','Đồng':'medal-bronze','Đồng 1':'medal-bronze','Đồng 2':'medal-bronze'};
 
   let tbody = '';
   for (const [, g] of Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b,'vi'))) {
@@ -1468,9 +1496,9 @@ function rCombatMedal() {
 // ════════════════════════════════════════════════
 function rPerfResult() {
   const q = document.getElementById('qPR').value.toLowerCase().trim();
-  const mOrder = {'Vàng':1,'Bạc':2,'Đồng':3};
-  const mIcon  = {'Vàng':'🥇','Bạc':'🥈','Đồng':'🥉'};
-  const mCls   = {'Vàng':'medal-gold','Bạc':'medal-silver','Đồng':'medal-bronze'};
+  const mOrder = {'Vàng':1,'Bạc':2,'Đồng':3,'Đồng 1':3,'Đồng 2':3};
+  const mIcon  = {'Vàng':'🥇','Bạc':'🥈','Đồng':'🥉','Đồng 1':'🥉','Đồng 2':'🥉'};
+  const mCls   = {'Vàng':'medal-gold','Bạc':'medal-silver','Đồng':'medal-bronze','Đồng 1':'medal-bronze','Đồng 2':'medal-bronze'};
 
   const rows = perfAllData.filter(p => {
     if (q && ![p.Ten,p.Donvi,p.Noidung,p.Nhomtuoi].join(' ').toLowerCase().includes(q)) return false;
@@ -1570,7 +1598,7 @@ function rPerfResult() {
 // ════════════════════════════════════════════════
 function rPerfMedal() {
   const q = document.getElementById('qPM').value.toLowerCase().trim();
-  const mOrder = {'Vàng':1,'Bạc':2,'Đồng':3};
+  const mOrder = {'Vàng':1,'Bạc':2,'Đồng':3,'Đồng 1':3,'Đồng 2':3};
 
   // Lấy từ perfAllData — chỉ lấy những VĐV đã có huy chương
   let rows = perfAllData.filter(m => {
@@ -1603,8 +1631,8 @@ function rPerfMedal() {
     });
   }
 
-  const mIcon = {'Vàng':'🥇','Bạc':'🥈','Đồng':'🥉'};
-  const mCls  = {'Vàng':'medal-gold','Bạc':'medal-silver','Đồng':'medal-bronze'};
+  const mIcon = {'Vàng':'🥇','Bạc':'🥈','Đồng':'🥉','Đồng 1':'🥉','Đồng 2':'🥉'};
+  const mCls  = {'Vàng':'medal-gold','Bạc':'medal-silver','Đồng':'medal-bronze','Đồng 1':'medal-bronze','Đồng 2':'medal-bronze'};
 
   let tbody = '';
   for (const [, g] of Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b,'vi'))) {
@@ -1658,13 +1686,18 @@ function buildSummaryFromData() {
 
   const _dedupedCombat = combatData.filter(r => r.winner_name);
 
-  for (const r of _dedupedCombat) {
+  // ✅ FIX: Quét TẤT CẢ combatData (kể cả chưa có winner) để build hcTranh34/banketMap
+  // Giống Python dùng all_match_lists — tránh miss trận BK chưa có KQ làm sai HC Đồng
+  for (const r of combatData) {
     const loai = (r.Loai_Tran||'').toLowerCase().trim();
     const hc   = r.Hang_can || '';
     if (loai.includes('tranh') && loai.includes('3')) hcTranh34.add(hc);
     if (loai==='bán kết' || loai==='ban ket' || loai==='banket') {
       if (!banketMap[hc]) banketMap[hc] = [];
-      banketMap[hc].push(r);
+      // Chỉ đưa vào banketMap nếu chưa có (tránh duplicate)
+      if (!banketMap[hc].find(x => x.STT === r.STT && x.list_name === r.list_name)) {
+        banketMap[hc].push(r);
+      }
     }
     if (hc && !hcDrawMode2[hc]) {
       const _dm2 = drawModesData[hc] || r.draw_mode || '';
@@ -1709,10 +1742,16 @@ function buildSummaryFromData() {
   }
 
   // --- Hội diễn ---
+  // Dedup theo (Noidung, Donvi, STT) giống Python: mỗi đội/nhóm chỉ đếm 1 HC
+  // Tránh tình trạng đội 5 người cùng STT bị đếm 5 lần
+  const processedPerf = new Set();
   for (const p of perfAllData) {
     const medal = p.manual_medal || p.medal || '';
     const donvi = p.Donvi || '';
     if (!medal || !donvi) continue;
+    const perfKey = `${(p.Noidung||'').trim()}|${donvi.trim()}|${(p.STT||'').toString().trim()}`;
+    if (processedPerf.has(perfKey)) continue;
+    processedPerf.add(perfKey);
     ensure(donvi);
     if (medal === 'Vàng') medalCount[donvi].vang++;
     else if (medal === 'Bạc') medalCount[donvi].bac++;
@@ -1744,8 +1783,18 @@ function buildSummaryFromData() {
 function rSummary() {
   const q = document.getElementById('qS').value.toLowerCase().trim();
 
-  // Luôn tính real-time từ combatData + perfAllData (phản ánh xóa/sửa kết quả ngay lập tức)
-  const rows = buildSummaryFromData().filter(r => !q || (r.donvi||'').toLowerCase().includes(q));
+  // ✅ Hiển thị ĐÚNG bảng tổng sắp do Python tính (calculate_summary_table → summary.json).
+  // KHÔNG tự tính lại trên HTML để tránh lệch kết quả với PY (vốn đã đúng).
+  const rows = (summaryRows || [])
+    .map(r => ({
+      donvi:   r.donvi || '',
+      vang:    r.vang  || 0,
+      bac:     r.bac   || 0,
+      dong:    r.dong  || 0,
+      xephang: r.xephang || 0,
+    }))
+    .filter(r => !q || r.donvi.toLowerCase().includes(q))
+    .sort((a, b) => (a.xephang - b.xephang) || a.donvi.localeCompare(b.donvi, 'vi'));
 
   document.getElementById('sTotal').textContent = `🏛️ ${rows.length} đơn vị`;
   const w = document.getElementById('wSummary');
@@ -2506,9 +2555,9 @@ function esc(s) {
 // POPUP: HUY CHƯƠNG THEO ĐOÀN
 // ════════════════════════════════════════════════
 function showDonviMedals(donvi) {
-  const mOrder = {'Vàng':1,'Bạc':2,'Đồng':3};
-  const mIcon  = {'Vàng':'🥇','Bạc':'🥈','Đồng':'🥉'};
-  const mCls   = {'Vàng':'medal-gold','Bạc':'medal-silver','Đồng':'medal-bronze'};
+  const mOrder = {'Vàng':1,'Bạc':2,'Đồng':3,'Đồng 1':3,'Đồng 2':3};
+  const mIcon  = {'Vàng':'🥇','Bạc':'🥈','Đồng':'🥉','Đồng 1':'🥉','Đồng 2':'🥉'};
+  const mCls   = {'Vàng':'medal-gold','Bạc':'medal-silver','Đồng':'medal-bronze','Đồng 1':'medal-bronze','Đồng 2':'medal-bronze'};
 
   // Gom huy chương Đối kháng — dedup trận trùng sân
   const combatMedals = [];
