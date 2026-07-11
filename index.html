@@ -775,6 +775,14 @@
       <button class="san-btn" onclick="fSan('cm','san3',this)">Sân 3</button>
       <button class="san-btn" onclick="fSan('cm','san4',this)">Sân 4</button>
     </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <span style="font-size:12px;color:#475569;white-space:nowrap">🎂 Nhóm tuổi:</span>
+      <select id="cmAgeFilter" onchange="rCombatMedal()"
+        style="background:#fff;border:1px solid #cbd5e1;border-radius:16px;color:#1e293b;
+               font-size:12px;padding:4px 10px;outline:none;cursor:pointer;min-width:130px">
+        <option value="all">Tất cả</option>
+      </select>
+    </div>
     <input class="search-box" id="qCM" type="text" placeholder="🔍 Tên VĐV, nội dung..." oninput="rCombatMedal()">
     <div class="stats-row">
       <div class="chip chip-g" id="cmGold">🥇 0</div>
@@ -800,6 +808,14 @@
 <!-- ══════════════════ TAB 3: HUY CHƯƠNG HỘI DIỄN ══════════════════ -->
 <div id="tab-perf-medal" class="tab-content">
   <div class="controls">
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <span style="font-size:12px;color:#475569;white-space:nowrap">🎂 Nhóm tuổi:</span>
+      <select id="pmAgeFilter" onchange="rPerfMedal()"
+        style="background:#fff;border:1px solid #cbd5e1;border-radius:16px;color:#1e293b;
+               font-size:12px;padding:4px 10px;outline:none;cursor:pointer;min-width:130px">
+        <option value="all">Tất cả</option>
+      </select>
+    </div>
     <input class="search-box" id="qPM" type="text" placeholder="🔍 Tên VĐV, đơn vị..." oninput="rPerfMedal()">
     <div class="stats-row">
       <div class="chip chip-g" id="pmCount">🏅 0 huy chương</div>
@@ -1350,9 +1366,21 @@ function rCombatMedal() {
 
   // combatData đã được dedup thông minh (winner_name > ts > pushKey) trong buildCombatData
   // Chỉ lọc theo sân nếu có filter, không dedup lại
-  const dedupedData = fCM === 'all'
+  let dedupedData = fCM === 'all'
     ? combatData.filter(r => r.winner_name)
     : combatData.filter(r => r.winner_name && r._san === fCM);
+
+  // ── Cập nhật dropdown nhóm tuổi (dựa trên dữ liệu đã lọc theo sân) ──
+  // Lưu ý: bản ghi đối kháng thường KHÔNG có field Nhomtuoi riêng (chỉ Hội diễn mới có).
+  // Nhóm tuổi của Đối kháng nằm trong list_name (vd: "ĐK Nhi đồng", "ĐK Nhóm 3") → dùng làm fallback.
+  const cmAgeOf = r => r.Nhomtuoi || r.list_name || '';
+  const cmAgeSel = document.getElementById('cmAgeFilter');
+  const curCMAge = cmAgeSel.value;
+  const cmAges = [...new Set(dedupedData.map(cmAgeOf).filter(Boolean))].sort((a,b) => a.localeCompare(b,'vi'));
+  cmAgeSel.innerHTML = '<option value="all">Tất cả</option>' +
+    cmAges.map(a => `<option value="${esc(a)}" ${a === curCMAge ? 'selected' : ''}>${esc(a)}</option>`).join('');
+  const cmAgeFilter = cmAgeSel.value || 'all';
+  if (cmAgeFilter !== 'all') dedupedData = dedupedData.filter(r => cmAgeOf(r) === cmAgeFilter);
 
   // Huy chương đối kháng: Vàng/Bạc từ Chung kết, Đồng tuỳ thể thức
   // draw_mode "tranh34": Đồng = người THẮNG Tranh 3-4 (≥4 VĐV) hoặc người THUA BK duy nhất (3 VĐV)
@@ -1607,6 +1635,15 @@ function rPerfMedal() {
     if (q && ![m.Ten,m.Donvi,m.Noidung,m.Nhomtuoi,medal].join(' ').toLowerCase().includes(q)) return false;
     return true;
   });
+
+  // ── Cập nhật dropdown nhóm tuổi ──
+  const pmAgeSel = document.getElementById('pmAgeFilter');
+  const curPMAge = pmAgeSel.value;
+  const pmAges = [...new Set(rows.map(m => m.Nhomtuoi || '').filter(Boolean))].sort((a,b) => a.localeCompare(b,'vi'));
+  pmAgeSel.innerHTML = '<option value="all">Tất cả</option>' +
+    pmAges.map(a => `<option value="${esc(a)}" ${a === curPMAge ? 'selected' : ''}>${esc(a)}</option>`).join('');
+  const pmAgeFilter = pmAgeSel.value || 'all';
+  if (pmAgeFilter !== 'all') rows = rows.filter(m => (m.Nhomtuoi||'') === pmAgeFilter);
 
   document.getElementById('pmCount').textContent = `🏅 ${rows.length} huy chương`;
   document.getElementById('pmVDV').textContent   = `👤 ${new Set(rows.map(r=>r.Ten+'|'+r.Donvi)).size} VĐV`;
